@@ -61,14 +61,76 @@ int DatabaseSystem::read_query(){
 
     //0.1=1.2&1.0=2.1&0.1>3000
     //SECOND FIELD
-    token = strtok(second, "&.");
+    char buffer[BUFF_SIZE];
+    char temp_buffer[BUFF_SIZE];
+    strcpy(buffer, strtok(second, "&"));
     num_of_predicates = 0;
-    while(token != NULL){
+    while(1){
         predicates = (Predicate**)realloc(predicates, (++num_of_predicates) * sizeof(Predicate*));
         predicates[num_of_predicates - 1] = (Predicate*)malloc(sizeof(Predicate));
 
-        predicates[num_of_predicates - 1]->relation2 = -1;
-        predicates->relation1 = atoi(strtok(token, "."));
+        cout << buffer << endl;
+        for(int i = 0, limit = strlen(buffer); i < limit; i++)
+            if(buffer[i] == '=' || buffer[i] == '>' || buffer[i] == '<'){
+                predicates[num_of_predicates - 1]->op = buffer[i];
+                break;
+            }
+        int i = 0;
+        for(int limit = strlen(buffer); i < limit; i++){
+            if(buffer[i] == '.'){
+                temp_buffer[i] = '\0';
+                i++;
+                break;
+            }
+            temp_buffer[i] = buffer[i];
+        }
+        predicates[num_of_predicates - 1]->relation1 = atoi(temp_buffer);
+        cout << temp_buffer << endl;
+
+        for(int j = 0, limit = strlen(buffer); i < limit; i++,j++){
+            if(buffer[i] == predicates[num_of_predicates -1]->op){
+                temp_buffer[j] = '\0';
+                i++;
+                break;
+            }
+            temp_buffer[j] = buffer[i];
+        }
+        predicates[num_of_predicates - 1]->column1 = atoi(temp_buffer);
+        cout << temp_buffer << endl;
+
+        //psaxnw an exei '.'
+        for(int j = 0, limit = strlen(buffer); i < limit; i++,j++){
+            if(buffer[i] == '.'){
+                temp_buffer[j] = '\0';
+                i++;
+                break;
+            }
+            temp_buffer[j] = buffer[i];
+        }
+        if(i == strlen(buffer)){//i==limit shmenei pos einai stathera
+            temp_buffer[i] == '\0';
+            predicates[num_of_predicates - 1]->value = atoi(temp_buffer);
+            predicates[num_of_predicates - 1]->relation2 = -1;
+            cout << temp_buffer << endl;
+        }
+        else{
+            predicates[num_of_predicates - 1]->relation2 = atoi(temp_buffer);
+            cout << temp_buffer << endl;
+            strcpy(temp_buffer, buffer + i);
+            predicates[num_of_predicates - 1]->column2 = atoi(temp_buffer);
+            cout << temp_buffer << endl;
+        }
+        token = strtok(NULL, "&");
+        if(token != NULL)
+            strcpy(buffer, token);
+        else
+            break;
+
+
+        // predicates[num_of_predicates - 1]->relation2 = -1;
+        // predicates->relation1 = atoi(token);
+        // predicates->column1 = atoi(strtok(NULL, "=><"));
+
 
 
     }
