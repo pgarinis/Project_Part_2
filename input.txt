@@ -1,5 +1,8 @@
 small/r0
 small/r1
 small/r2
+small/r3
+small/r4
+small/r5
 Done
 0 2 4|0.1=1.2&1.0=2.1&0.1>3000|0.0 1.1

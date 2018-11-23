@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]) {
     // delete r0, r1, r2, r3;
     DatabaseSystem* xd = new DatabaseSystem();
     xd->load_relations();
-    xd->read_query();
+    xd->construct_query();
     delete xd;
     return 0;
 }
