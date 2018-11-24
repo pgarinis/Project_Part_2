@@ -1,15 +1,12 @@
-#include <iostream>
-#include <fstream>
-#include <stdint.h>
-#include <cstdlib>
-#include <cstring>
 #include "Relation.h"
 #include "Query.h"
-
+#include "ResultList.h"
 
 class DatabaseSystem{
     int num_of_relations;
     Relation** relations;
+
+    ResultList** result_lists;
 
     //holds the current query given
     Query* query;
@@ -18,12 +15,12 @@ public:
     ~DatabaseSystem();
 
     /*
-    reads the names of the binary files that contain each relation
-    and loads relations to heap
+    reads(from stdin) the names of the binary files that contain each relation
+    and loads relations to heap dynamically
     */
     int load_relations();
     /*
-    constructs query  given from stdin through query's read_query function
+    constructs query  given (from stdin) through query's read_query() function
     */
     int construct_query();
     /*
@@ -44,6 +41,6 @@ public:
         int self_join_o(Predicate predicate);
         int self_join_n(Predicate predicate);
     int filter(Predicate predicate);
-        int filter_o(Predicate predicate);
+        int filter_o(Predicate* predicate);
         int filter_n(Predicate predicate);
 };

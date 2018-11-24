@@ -1,12 +1,17 @@
 #include "Relation.h"
+#include <iostream>
+#include <fstream>
+#include <stdint.h>
+#include <cstdlib>
+
+using namespace std;
 
 Relation::Relation(char* file_name){
     //open relation's binary file
     ifstream infile;
     infile.open(file_name, ios::binary | ios::in);
-    if(infile.fail()){
+    if(infile.fail())
         cout<<"error opening "<<file_name<<endl;
-    }
     //format of binary file ('|' do not exist in the file):
     //uint64_t numTuples|uint64_t numColumns|uint64_t T0C0|uint64_t T1C0|..|uint64_t TnC0|uint64_t T0C1|..|uint64_t TnC1|..|uint64_t TnCm
 
@@ -22,6 +27,7 @@ Relation::Relation(char* file_name){
     //close relation's binary file
     infile.close();
     cout << "Relation " << file_name << " loaded successfully." << endl;
+    cout << num_of_records << endl;
 };
 
 Relation::~Relation(){

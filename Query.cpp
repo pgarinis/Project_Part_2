@@ -1,9 +1,11 @@
+#include "Query.h"
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
 #include <cstdlib>
 #include <cstring>
-#include "Query.h"
+
+using namespace std;
 #define BUFF_SIZE 256
 
 Query::Query():
@@ -14,8 +16,11 @@ projections(NULL), num_of_projections(0)
 }
 
 Query::~Query(){
-    free(relations);
+    for(int i = 0; i < num_of_predicates; i++)
+        free(predicates[i]);
     free(predicates);
+    for(int i = 0; i < num_of_projections; i++)
+        free(projections[i]);
     free(projections);
 }
 
@@ -34,15 +39,14 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
     first = strtok(query, "|");
     second = strtok(NULL, "|");
     third = strtok(NULL, "\n");
-    cout << first << endl;
-    cout << second << endl;
-    cout << third << endl;
+    //cout << first << endl;
+    //cout << second << endl;
+    //cout << third << endl;
 
     //FIRST FIELD
     token = strtok(first, " ");
     while(token != NULL){
         relations = (Relation**)realloc(relations, (++num_of_relations) * sizeof(Relation*));
-        cout << atoi(token) << endl;
         if(atoi(token) < 0 || atoi(token) > db_num_of_relations)
             cout << "WRONG INDEX" << endl;
         relations[num_of_relations - 1] = db_relations[atoi(token)];
@@ -58,10 +62,11 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         predicates = (Predicate**)realloc(predicates, (++num_of_predicates) * sizeof(Predicate*));
         predicates[num_of_predicates - 1] = (Predicate*)malloc(sizeof(Predicate));
 
-        cout << buffer << endl;
+        //cout << buffer << endl;
         for(int i = 0, limit = strlen(buffer); i < limit; i++)
             if(buffer[i] == '=' || buffer[i] == '>' || buffer[i] == '<'){
                 predicates[num_of_predicates - 1]->op = buffer[i];
+                //cout << buffer[i];
                 break;
             }
         int i = 0;
@@ -74,7 +79,7 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
             temp_buffer[i] = buffer[i];
         }
         predicates[num_of_predicates - 1]->relation1 = atoi(temp_buffer);
-        cout << temp_buffer << endl;
+        //cout << temp_buffer << endl;
 
         for(int j = 0, limit = strlen(buffer); i < limit; i++,j++){
             if(buffer[i] == predicates[num_of_predicates -1]->op){
@@ -85,7 +90,7 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
             temp_buffer[j] = buffer[i];
         }
         predicates[num_of_predicates - 1]->column1 = atoi(temp_buffer);
-        cout << temp_buffer << endl;
+        //cout << temp_buffer << endl;
 
         //psaxnw an exei '.'
         for(int j = 0, limit = strlen(buffer); i < limit; i++,j++){
@@ -100,14 +105,14 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
             temp_buffer[i] == '\0';
             predicates[num_of_predicates - 1]->value = atoi(temp_buffer);
             predicates[num_of_predicates - 1]->relation2 = -1;
-            cout <<  predicates[num_of_predicates - 1]->value << endl;
+            //cout <<  predicates[num_of_predicates - 1]->value << endl;
         }
         else{
             predicates[num_of_predicates - 1]->relation2 = atoi(temp_buffer);
-            cout << temp_buffer << endl;
+            //cout << temp_buffer << endl;
             strcpy(temp_buffer, buffer + i);
             predicates[num_of_predicates - 1]->column2 = atoi(temp_buffer);
-            cout << temp_buffer << endl;
+            //cout << temp_buffer << endl;
         }
         token = strtok(NULL, "&");
         if(token != NULL)
@@ -130,8 +135,8 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         token = strtok(NULL, " .\n");
     }
 
-    cout << "there are "<< num_of_relations << " relations in this query."<<endl;
-    cout << "there are "<< num_of_predicates << " predicates in this query" <<endl;
-    cout << "there are "<< num_of_projections << " projections in this query"<< endl;
+    //cout << "there are "<< num_of_relations << " relations in this query."<<endl;
+    //cout << "there are "<< num_of_predicates << " predicates in this query" <<endl;
+    //cout << "there are "<< num_of_projections << " projections in this query"<< endl;
 
 }

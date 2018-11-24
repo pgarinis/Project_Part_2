@@ -1,10 +1,5 @@
 #pragma once
-#include <iostream>
-#include <fstream>
 #include <stdint.h>
-#include <cstdlib>
-
-using namespace std;
 
 class Relation{
     uint64_t num_of_records;
