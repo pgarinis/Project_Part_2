@@ -37,10 +37,14 @@ public:
         int join_oo(Predicate predicate);
         int join_nn(Predicate predicate);
         int join_no(Predicate predicate);
-    int self_join(Predicate predicate);
-        int self_join_o(Predicate predicate);
-        int self_join_n(Predicate predicate);
-    int filter(Predicate predicate);
+    int self_join(Predicate* predicate);
+        int self_join_o(Predicate* predicate);
+        int self_join_n(Predicate* predicate);
+    int filter(Predicate* predicate);
         int filter_o(Predicate* predicate);
-        int filter_n(Predicate predicate);
+        int filter_n(Predicate* predicate);
+        static inline int equal(uint64_t num1, uint64_t num2){ return num1 == num2;}
+        static inline int greater_than(uint64_t num1, uint64_t num2){ return num1 > num2;}
+        static inline int less_than(uint64_t num1, uint64_t num2){ return num1 < num2;}
+
 };

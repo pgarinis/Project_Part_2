@@ -21,6 +21,7 @@ Relation::Relation(char* file_name){
 
     //dynamically allocate space to store the columns & store them there
     uint64_t size = num_of_records * num_of_columns * sizeof(uint64_t);
+    cout << size << endl;
     columns = (uint64_t*)malloc(size);
     infile.read((char*)columns, size);
 

@@ -63,12 +63,11 @@ int DatabaseSystem::execute_query(){
     int limit = query->get_num_of_predicates();
     for(int i = 0; i < limit; i++){
         if(predicates[i]->relation2 == -1){//FILTER
-            if(result_lists[predicates[i]->relation1] == NULL){//original
-                filter_o(predicates[i]);
-            }
+            filter(predicates[i]);
 
         }
         if(predicates[i]->relation1 == predicates[i]->relation2){//SELF JOIN
+            self_join(predicates[i]);
         }
         else{//JOIN
 
@@ -82,33 +81,183 @@ int DatabaseSystem::execute_query(){
     delete(query);
 }
 
-int DatabaseSystem::filter_o(Predicate* predicate){
-    //relations we are working with
-    Relation* relation = query->get_relations()[predicate->relation1];
-
+/*
+Decides if filter will be applied to initial column or result list
+*/
+int DatabaseSystem::filter(Predicate* predicate){
     if(result_lists[predicate->relation1] == NULL)
-        result_lists[predicate->relation1] = new ResultList();
+        filter_o(predicate);
+    else
+        filter_n(predicate);
+}
 
+/*
+Applies filter to column
+*/
+int DatabaseSystem::filter_o(Predicate* predicate){
+    //relation we are working with
+    Relation* relation = query->get_relations()[predicate->relation1];
     uint64_t* column = relation->get_column(predicate->column1);
+    uint64_t num_of_records = relation->get_num_of_records();
 
-    for(int i = 0; i < relation->get_num_of_records(); i++){
-        if(predicate->op == '='){
-            if(column[i] ==  predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
-        }
-        else if(predicate->op == '>'){
-            if(column[i] >  predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
-        }
-        else if(predicate->op == '<'){
-            if(column[i] < predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
+    //create new result list since there isn't any for this relation
+    result_lists[predicate->relation1] = new ResultList();
+
+    //set operator function accordingly (< or > or = operators are possible)
+    int (*op_fun)(uint64_t, uint64_t);
+    if(predicate->op == '=')
+        op_fun = &equal;
+    else if(predicate->op == '>')
+        op_fun = &greater_than;
+    else if(predicate->op == '<')
+        op_fun = &less_than;
+
+    //scan whole columnn and apply filter, then store ids at result list
+    for(int i = 0; i < num_of_records; i++){
+        if(op_fun(column[i], predicate->value)){
+            // cout << column[i] << endl;
+            // cout << i + 1<< endl;
+            result_lists[predicate->relation1]->add_result(i);
         }
     }
 
+    //if no id was added to result list, delete result
     if(result_lists[predicate->relation1]->get_head_node()->get_cur_index() == 0){
         delete result_lists[predicate->relation1];
-        result_lists[predicate->relation1] = NULL;
+        result_lists[predicate->relation1] = NULL;//TODO: return NULL to query
+    }
+}
+
+/*
+Applies filter to result list
+*/
+int DatabaseSystem::filter_n(Predicate* predicate){
+    //result list we are working with
+    ResultList* result_list = result_lists[predicate->relation1];
+    ResultNode* cur_node = result_list->get_head_node();
+
+    //column is needed to check values of rows
+    uint64_t* column = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+
+    //create new list to store new results
+    ResultList* new_list = new ResultList();
+
+    //set op fun accordingly
+    int (*op_fun)(uint64_t, uint64_t);
+    if(predicate->op == '=')
+        op_fun = &equal;
+    else if(predicate->op == '>')
+        op_fun = &greater_than;
+    else if(predicate->op == '<')
+        op_fun = &less_than;
+
+    //scan whole result_list and apply filter, then store new results to new_list
+    while(cur_node != NULL){
+        uint64_t* id_array = cur_node->get_id_array();
+        int limit = cur_node->get_cur_index();
+        for(int i = 0; i < limit; i++){
+            if(op_fun(column[id_array[i]], predicate->value)){
+                // cout << column[id_array[i]] << endl;
+                // cout << id_array[i]+1 << endl;
+                new_list->add_result(id_array[i]);
+            }
+        }
+        cur_node = cur_node->get_next_node();
     }
 
+    //delete previous result_list and set result_list to new_list
+    delete result_lists[predicate->relation1];
+    if(new_list->get_head_node()->get_cur_index() == 0){
+        delete new_list;
+        result_lists[predicate->relation1] = NULL;//TODO: return NULL to query
+    }
+    else
+        result_lists[predicate->relation1] = new_list;
+}
+
+int DatabaseSystem::self_join(Predicate* predicate){
+    if(result_lists[predicate->relation1] == NULL)
+        self_join_o(predicate);
+    else
+        self_join_n(predicate);
+}
+
+int DatabaseSystem::self_join_o(Predicate* predicate){
+    //relation we are working with
+    Relation* relation = query->get_relations()[predicate->relation1];
+    uint64_t* column1 = relation->get_column(predicate->column1);
+    uint64_t* column2 = relation->get_column(predicate->column2);
+    uint64_t num_of_records = relation->get_num_of_records();
+
+    //create new result list since there isn't any for this relation
+    result_lists[predicate->relation1] = new ResultList();
+
+    //set operator function accordingly (< or > or = operators are possible)
+    int (*op_fun)(uint64_t, uint64_t);
+    if(predicate->op == '=')
+        op_fun = &equal;
+    else if(predicate->op == '>')
+        op_fun = &greater_than;
+    else if(predicate->op == '<')
+        op_fun = &less_than;
+
+    //scan whole columnn and apply filter, then store ids at result list
+    for(int i = 0; i < num_of_records; i++){
+        if(op_fun(column1[i], column2[i])){
+            // cout << column1[i] << " vs " << column2[i]  << endl;
+            // cout <<"g"<< i + 1<< endl;
+            result_lists[predicate->relation1]->add_result(i);
+        }
+    }
+
+    //if no id was added to result list, delete result
+    if(result_lists[predicate->relation1]->get_head_node()->get_cur_index() == 0){
+        delete result_lists[predicate->relation1];
+        result_lists[predicate->relation1] = NULL;//TODO: return NULL to query
+    }
+}
+
+int DatabaseSystem::self_join_n(Predicate* predicate){
+    //result list we are working with
+    ResultList* result_list = result_lists[predicate->relation1];
+    ResultNode* cur_node = result_list->get_head_node();
+
+    //column is needed to check values of rows
+    uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+    uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
+
+    //create new list to store new results
+    ResultList* new_list = new ResultList();
+
+    //set op fun accordingly
+    int (*op_fun)(uint64_t, uint64_t);
+    if(predicate->op == '=')
+        op_fun = &equal;
+    else if(predicate->op == '>')
+        op_fun = &greater_than;
+    else if(predicate->op == '<')
+        op_fun = &less_than;
+
+    //scan whole result_list and apply filter, then store new results to new_list
+    while(cur_node != NULL){
+        uint64_t* id_array = cur_node->get_id_array();
+        int limit = cur_node->get_cur_index();
+        for(int i = 0; i < limit; i++){
+            if(op_fun(column1[id_array[i]], column2[id_array[i]])){
+                // cout << column1[id_array[i]] << endl;
+                // cout <<"g"<< id_array[i]+1 << endl;
+                new_list->add_result(id_array[i]);
+            }
+        }
+        cur_node = cur_node->get_next_node();
+    }
+
+    //delete previous result_list and set result_list to new_list
+    delete result_lists[predicate->relation1];
+    if(new_list->get_head_node()->get_cur_index() == 0){
+        delete new_list;
+        result_lists[predicate->relation1] = NULL;//TODO: return NULL to query
+    }
+    else
+        result_lists[predicate->relation1] = new_list;
 }

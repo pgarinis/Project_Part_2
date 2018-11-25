@@ -19,12 +19,10 @@ public:
 class ResultList{
     ResultNode* head_node;
     ResultNode* cur_node;
-    ResultNode* search_node;
   public:
     ResultList();
     ~ResultList();
 
     int add_result(uint64_t new_id);
-    ResultNode* get_next_result_node();
     ResultNode* get_head_node(){return this->head_node;}
 };

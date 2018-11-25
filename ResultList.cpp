@@ -28,7 +28,6 @@ ResultNode* ResultNode::add_id(uint64_t new_id){
 ResultList::ResultList(){
     head_node = new ResultNode();
     cur_node = head_node;
-    search_node = head_node;
 }
 
 ResultList::~ResultList(){
@@ -42,10 +41,4 @@ ResultList::~ResultList(){
 
 int ResultList::add_result(uint64_t new_id){
     cur_node = cur_node->add_id(new_id);
-}
-
-ResultNode* ResultList::get_next_result_node(){
-  ResultNode* temp = search_node;
-  search_node = search_node->get_next_node();
-  return temp;
 }
