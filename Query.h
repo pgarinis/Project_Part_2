@@ -45,5 +45,4 @@ public:
 
 
     int read_query(Relation** db_relations, int db_num_of_relations);
-    int print_query();
 };

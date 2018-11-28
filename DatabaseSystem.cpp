@@ -4,12 +4,11 @@
 #include <stdint.h>
 #include <cstdlib>
 #include <cstring>
-
-using namespace std;
+#include "Relation.h"
 #define BUFF_SIZE 256
 
 DatabaseSystem::DatabaseSystem():
-num_of_relations(0), relations(NULL), result_lists(NULL)
+num_of_relations(0), relations(NULL), results(NULL)
 {
 
 }
@@ -44,71 +43,154 @@ int DatabaseSystem::construct_query(){
 }
 
 int DatabaseSystem::execute_query(){
-    //initialise lists
-    result_lists = (ResultList**)malloc(query->get_num_of_relations() * sizeof(ResultList*));
-    for(int i = 0; i < query->get_num_of_relations(); i++)
-        result_lists[i] = NULL;
-
-    //do the main job
-    //0 2 4|0.1=1.2&1.0=2.1&0.1>3000|0.0 1.1
-    /*
-    int relation1;
-    int column1;
-    int relation2;
-    int column2;
-    char op; // '=' or '>' or '<'
-    uint64_t value;
-    */
+    //get predicates from query in order to iterate over them
     Predicate** predicates = query->get_predicates();
-    int limit = query->get_num_of_predicates();
-    for(int i = 0; i < limit; i++){
-        if(predicates[i]->relation2 == -1){//FILTER
-            if(result_lists[predicates[i]->relation1] == NULL){//original
-                filter_o(predicates[i]);
-            }
 
+    //is_processed[0] == 0 means that query's relation with relative index 0
+    //hasn't been processed yet in this query
+    int* is_processed = (int*)calloc(query->get_num_of_relations(), sizeof(int));
+
+    //for every predicate
+    for(int i = 0; i < query->get_num_of_predicates(); i++){
+        if(predicates[i]->relation2 == -1){//FILTER
+            filter(predicates[i]);
+            is_processed[predicates[i]->relation1] = 1;
         }
         if(predicates[i]->relation1 == predicates[i]->relation2){//SELF JOIN
+            self_join(predicates[i]);
+            is_processed[predicates[i]->relation1] = 1;
         }
         else{//JOIN
-
+            join(predicates[i], is_processed);
         }
+        // results->print_list(predicates[i]->relation1);
+        cout << "Predicate DONE\n";
     }
+    //results->print_list(predicates[0]->relation1);
 
-    for(int i = 0; i < query->get_num_of_relations(); i++)
-        if(result_lists[i] != NULL)
-            delete result_lists[i];
-    free(result_lists);
-    delete(query);
+    free(is_processed);
+    delete results;
+    delete query;
 }
 
-int DatabaseSystem::filter_o(Predicate* predicate){
-    //relations we are working with
-    Relation* relation = query->get_relations()[predicate->relation1];
 
-    if(result_lists[predicate->relation1] == NULL)
-        result_lists[predicate->relation1] = new ResultList();
+int DatabaseSystem::self_join(Predicate* predicate){
+    //get the columns the function will work with
+    uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+    uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
 
-    uint64_t* column = relation->get_column(predicate->column1);
+    //temporal tuple used to hold current tuple while searching
+    uint64_t* tuple = (uint64_t*)malloc(query->get_num_of_relations() * sizeof(uint64_t));
 
-    for(int i = 0; i < relation->get_num_of_records(); i++){
-        if(predicate->op == '='){
-            if(column[i] ==  predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
+    //search either results or respective column, depending on previous predicates executed
+    if(results == NULL){ //search whole original column
+        for(uint64_t i = 0; i < query->get_relations()[predicate->relation1]->get_num_of_records(); i++){
+            //if node is qualified to pass the filter, add it to the list
+            if(column1[i] == column2[i]){
+                //cout << column1[i] << endl;
+                //cout << i + 1<< endl;
+                tuple[predicate->relation1] = i;
+                if(results == NULL)
+                    results = new SingleLinkedList(query->get_num_of_relations());
+                results->add_node(tuple);
+            }
         }
-        else if(predicate->op == '>'){
-            if(column[i] >  predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
-        }
-        else if(predicate->op == '<'){
-            if(column[i] < predicate->value)
-                result_lists[predicate->relation1]->add_result(column[i]);
+    }
+    else{ //search result list
+        //prev_node is needed for removing a node
+        Node* prev_node = NULL;
+        //cur_node is needed to search the result list
+        Node* cur_node = results->get_head();
+        while(cur_node != NULL){
+            //remove node from list if it fails to pass the filter
+            if(column1[cur_node->tuple[predicate->relation1]] != column2[cur_node->tuple[predicate->relation1]]){
+                Node* temp = cur_node->next;
+                results->remove_node(prev_node, cur_node);
+                cur_node = temp;
+            }
+            else{
+                cout << "YOLOOO" << endl;
+                prev_node = cur_node;
+                cur_node = cur_node->next;
+            }
         }
     }
 
-    if(result_lists[predicate->relation1]->get_head_node()->get_cur_index() == 0){
-        delete result_lists[predicate->relation1];
-        result_lists[predicate->relation1] = NULL;
+    free(tuple);
+}
+
+int DatabaseSystem::filter(Predicate* predicate){
+    //get column the function will work with
+    uint64_t* column = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+
+    //set operator function accordingly (< or > or = operators are possible)
+    int (*op_fun)(uint64_t, uint64_t);
+    if(predicate->op == '=')
+        op_fun = &equal;
+    else if(predicate->op == '>')
+        op_fun = &greater_than;
+    else if(predicate->op == '<')
+        op_fun = &less_than;
+
+    //temporal tuple used to hold current tuple while searching
+    uint64_t* tuple = (uint64_t*)malloc(query->get_num_of_relations() * sizeof(uint64_t));
+
+    //search either results or respective column, depending on previous predicates executed
+    if(results == NULL){ //search whole original column
+        for(uint64_t i = 0; i < query->get_relations()[predicate->relation1]->get_num_of_records(); i++){
+            //if node is qualified to pass the filter, add it to the list
+            if(op_fun(column[i], predicate->value)){
+                //cout << column[i] << endl;
+                //cout << i + 1<< endl;
+                tuple[predicate->relation1] = i;
+                if(results == NULL)
+                    results = new SingleLinkedList(query->get_num_of_relations());
+                results->add_node(tuple);
+            }
+        }
+    }
+    else{ //search result list
+        //prev_node is needed for removing a node
+        Node* prev_node = NULL;
+        //cur_node is needed to search the result list
+        Node* cur_node = results->get_head();
+        while(cur_node != NULL){
+            //remove node from list if it fails to pass the filter
+            if(!op_fun(column[cur_node->tuple[predicate->relation1]], predicate->value)){
+                Node* temp = cur_node->next;
+                results->remove_node(prev_node, cur_node);
+                cur_node = temp;
+            }
+            else{
+                prev_node = cur_node;
+                cur_node = cur_node->next;
+            }
+        }
     }
 
+    free(tuple);
+}
+
+int DatabaseSystem::join(Predicate* predicate, int* is_processed){
+    //both relatinos are processed already
+    if(is_processed[predicate->relation1] && is_processed[predicate->relation2]){
+        //metasximatismos listas parallhla se 2 pinakes r1' r2'
+
+        //index ton mikrotero pinaka
+
+
+    }
+    //only relation1 is processed already
+    else if(is_processed[predicate->relation1]){
+
+    }
+    //only relation2 is processed already
+    else if(is_processed[predicate->relation2]){
+
+    }
+    //neiter of the 2 relations are processed, results is NULL
+    else if(results == NULL)
+    {
+
+    }
 }

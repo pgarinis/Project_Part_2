@@ -1,2 +1,2 @@
 g++ *p
-time ./a.out < input.txt
+./a.out < input.txt

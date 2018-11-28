@@ -1,11 +1,9 @@
-#include "Query.h"
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
 #include <cstdlib>
 #include <cstring>
-
-using namespace std;
+#include "Query.h"
 #define BUFF_SIZE 256
 
 Query::Query():
@@ -16,11 +14,8 @@ projections(NULL), num_of_projections(0)
 }
 
 Query::~Query(){
-    for(int i = 0; i < num_of_predicates; i++)
-        free(predicates[i]);
+    free(relations);
     free(predicates);
-    for(int i = 0; i < num_of_projections; i++)
-        free(projections[i]);
     free(projections);
 }
 
@@ -47,6 +42,7 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
     token = strtok(first, " ");
     while(token != NULL){
         relations = (Relation**)realloc(relations, (++num_of_relations) * sizeof(Relation*));
+        //cout << atoi(token) << endl;
         if(atoi(token) < 0 || atoi(token) > db_num_of_relations)
             cout << "WRONG INDEX" << endl;
         relations[num_of_relations - 1] = db_relations[atoi(token)];
@@ -66,7 +62,6 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         for(int i = 0, limit = strlen(buffer); i < limit; i++)
             if(buffer[i] == '=' || buffer[i] == '>' || buffer[i] == '<'){
                 predicates[num_of_predicates - 1]->op = buffer[i];
-                //cout << buffer[i];
                 break;
             }
         int i = 0;
