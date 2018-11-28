@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "JoinEngine.h"
+
 using namespace std;
 #define BUFF_SIZE 256
 
@@ -79,6 +81,28 @@ int DatabaseSystem::execute_query(){
             delete result_lists[i];
     free(result_lists);
     delete(query);
+}
+
+int DatabaseSystem::join(Predicate* predicate){
+  if(result_lists[predicate->relation1] == NULL && result_lists[predicate->relation1] == NULL)
+      join_oo(predicate);
+  else if(result_lists[predicate->relation1] == NULL || result_lists[predicate->relation2] == NULL)
+      join_no(predicate);
+  else
+      join_nn(predicate);
+
+}
+
+int DatabaseSystem::join_oo(Predicate* predicate){
+    Relation* relation1 = query->get_relations()[predicate->relation1];
+    Relation* relation2 = query->get_relations()[predicate->relation2];
+    uint64_t* column1 = relation1->get_column(predicate->column1);
+    uint64_t* column2 = relation2->get_column(predicate->column2);
+    uint64_t num_of_records1 = relation1->get_num_of_records();
+    uint64_t num_of_records2 = relation2->get_num_of_records();
+
+    //create new result list since there isn't any for this relation
+    result_lists[predicate->relation1] = new ResultList();
 }
 
 /*
