@@ -1,5 +1,9 @@
 #include "Query.h"
 #include "SingleLinkedList.h"
+#include <list>
+#include "ResultBuffer.h"
+
+using namespace std;
 
 class DatabaseSystem{
     int num_of_relations;
@@ -8,11 +12,12 @@ class DatabaseSystem{
     //holds the current query given
     Query* query;
 
-    SingleLinkedList* results;
+    list<BufferNode>* result_buffer;
 public:
     DatabaseSystem();
     ~DatabaseSystem();
 
+    void print_result_buffer();
     /*
     reads the names of the binary files that contain each relation
     and loads relations to heap
@@ -32,7 +37,7 @@ public:
     o : original
     n : not original (take 'column' from temp results)
     */
-    int join(Predicate* predicate, int* is_processed);
+    int join(Predicate* predicate);
     int self_join(Predicate* predicate);
     int filter(Predicate* predicate);
         static inline int equal(uint64_t num1, uint64_t num2){ return num1 == num2;}

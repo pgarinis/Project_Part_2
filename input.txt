@@ -3,7 +3,5 @@ small/r1
 small/r2
 small/r3
 small/r4
-small/r5
-small/r13
 Done
-6 2 4|0.0>129300|0.0 1.1
+0 2 4|0.0>1000&0.0<1100|0.0 1.1
