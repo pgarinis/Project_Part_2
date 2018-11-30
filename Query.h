@@ -24,6 +24,8 @@ class Query{
     //for third field
     Projection** projections;
     int num_of_projections;
+
+    int num_of_processed_relations;
 public:
     Query();
     ~Query();
@@ -36,10 +38,13 @@ public:
     Projection** get_projections(){ return this->projections;}
     int get_num_of_projections(){ return this->num_of_projections;}
 
+    int get_num_of_processed_relations(){ return this->num_of_processed_relations;}
+
     //setters
     void set_num_of_relations(int num){ this->num_of_relations = num;}
     void set_num_of_predicates(int num){ this->num_of_predicates = num;}
     void set_num_of_projections(int num){ this->num_of_projections = num;}
+    void incr_num_of_processed_relations(){ this->num_of_processed_relations++;}
 
 
 

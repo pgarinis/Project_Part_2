@@ -9,7 +9,8 @@
 Query::Query():
 relations(NULL), num_of_relations(0),
 predicates(NULL), num_of_predicates(0),
-projections(NULL), num_of_projections(0)
+projections(NULL), num_of_projections(0),
+num_of_processed_relations(0)
 {
 }
 
