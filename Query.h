@@ -1,3 +1,7 @@
+#ifndef QUERY_H
+#define QUERY_H
+
+
 #include "Relation.h"
 
 typedef struct{
@@ -51,3 +55,5 @@ public:
 
     int read_query(Relation** db_relations, int db_num_of_relations);
 };
+
+#endif /* end of include guard: QUERY_H */

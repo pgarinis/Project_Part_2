@@ -178,10 +178,13 @@ int DatabaseSystem::filter(Predicate* predicate){
 
 int DatabaseSystem::join(Predicate* predicate, int* is_processed){
     //both relatinos are processed already
-    if([predicate->relation1] && [predicate->relation2]){
+    if(is_processed[predicate->relation1] && is_processed[predicate->relation2]){
         //metasximatismos listas parallhla se 2 pinakes r1' r2'
         //join_nn()
         //index ton mikrotero pinaka
+
+        //new joiner to handle join predicate with type 0 (not original - not original)
+        this->joiner = new Joiner(this->query, predicate, is_processed, this->result_buffer,0);
 
 
     }
@@ -199,19 +202,11 @@ int DatabaseSystem::join(Predicate* predicate, int* is_processed){
         //join_oo()
     }
 }
-
-int DatabaseSystem::join_on(Predicate* predicate){
-    //relation1->original
-    //relation2->not original
-
-    //relation1
-
-}
-
-int JoinEngine::segmentation(Predicate* predicate){
-    create_and_compute_hist_array(relations[i]);
-    create_and_compute_psum_array(relations[i]);
-    create_and_compute_new_column(relations[i]);
-    cout << "Both relations segmentated successfully!" << endl;
-    return 0;
-}
+//
+// int DatabaseSystem::join_on(Predicate* predicate){
+//     //relation1->original
+//     //relation2->not original
+//
+//     //relation1
+//
+// }

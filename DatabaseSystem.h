@@ -1,7 +1,10 @@
+#ifndef DBSYSTEM_H
+#define DBSYSTEM_H
+
+
 #include "Query.h"
-#include "SingleLinkedList.h"
 #include <vector>
-#include "ResultBuffer.h"
+#include "Joiner.h"
 
 using namespace std;
 
@@ -19,16 +22,6 @@ class DatabaseSystem{
     int* is_processed;
 
 public:
-    int get_h1_num_of_buckets(){
-      return h1_num_of_buckets;
-    }
-
-    int get_h2_num_of_buckets(){
-      return h2_num_of_buckets;
-    }
-
-    inline int h1(uint64_t num){return (num & (h1_num_of_buckets - 1));}
-    inline int h2(uint64_t num){return num % 16699;};
 
     /*
     rearranges every column's records in order to create a new column where records
@@ -91,3 +84,6 @@ public:
         static inline int less_than(uint64_t num1, uint64_t num2){ return num1 < num2;}
 
 };
+
+
+#endif /* end of include guard: DBSYSTEM_H */
