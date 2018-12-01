@@ -11,9 +11,9 @@ is_processed(is_processed), result_buffer(result_buffer), join_type(type){
     h2_num_of_buckets = 16699;
     h2_num_of_bits = (int)log2(h2_num_of_buckets);
 
-    if(type == 0){ // n-n
-
-    }
+    // if(type == 0){ // n-n
+    //
+    // }
 }
 
 int Joiner::segmentation(){
@@ -22,7 +22,7 @@ int Joiner::segmentation(){
     //for(int i = 0; i < 2; i++){
     create_and_compute_hist_array();
     create_and_compute_psum_array();
-    //create_and_compute_new_column();
+    create_and_compute_new_column();
     //}
 
     cout << "Both relations segmentated successfully!" << endl;
@@ -45,19 +45,24 @@ int Joiner::create_and_compute_hist_array(){
             cout << "NULL" << endl;
             return -1;
         }
+
         vector<uint64_t>::iterator it = result_buffer->begin() + predicate->relation1;
+        //hist_array for relation1
         while( it != result_buffer->end()) {
             hash_value = h1(column1[*it]); //iterator has rowId, hash the value of that rowId
             hist_array[0][hash_value]++;
             it += query->get_num_of_processed_relations();
         }
-
+        //hist_array for relation2
         it = result_buffer->begin() + predicate->relation2;
         while( it != result_buffer->end()) {
             hash_value = h1(column2[*it]); //iterator has rowId, hash the value of that rowId
             hist_array[1][hash_value]++;
             it += query->get_num_of_processed_relations();
         }
+
+
+
         return 0;
     }
 
@@ -78,72 +83,109 @@ int Joiner::create_and_compute_psum_array(){
     return 0;
 }
 
-// int Joiner::create_and_compute_new_column(){
-//     //to make code more readable
-//     int hash_value;
-//
-//     //dynamically allocate new_column to store the column by hash value order
-//     relation->set_new_column(relation->get_num_of_records());
-//
-//     //temporal array needed to calculate new_column. this array is copy of psum array initially
-//     int copy_of_psum_array[h1_num_of_buckets];
-//     for(int j = 0; j < h1_num_of_buckets; j++)
-//         copy_of_psum_array[j] = relation->get_psum_array()[j];
-//
-//     //calculate new_column. new column is an array of tuples (uint64_t index, uint64_t value)
-//     for(int j = 0; j < relation->get_num_of_records(); j++){
-//         hash_value = h1(relation->get_column()[j]);
-//         relation->get_new_column()[copy_of_psum_array[hash_value]].set(j, relation->get_column()[j]);
-//         copy_of_psum_array[hash_value]++;
-//     }
-//     return 0;
-// }
+int Joiner::create_and_compute_new_column(){
+    //to make code more readable
+    int hash_value;
 
-//
-// int Joiner::indexing(){
-//     //choose the smallest relation to index
-//     Relation* relation = NULL;
-//     if(relations[0]->get_num_of_records() < relations[1]->get_num_of_records())
-//         relation = relations[0];
-//     else
-//         relation = relations[1];
-//
-//     //create index for every bucket made at segmentation
-//     relation->set_index_array(h1_num_of_buckets);
-//
-//     //to make code more readable
-//     int hash_value;
-//
-//     //for every bucket made at segmentation
-//     for(int j = 0; j < h1_num_of_buckets; j++){
-//         //store current index to a variable to make code more readable
-//         Index& cur_index = relation->get_index_array()[j];
-//         create_and_init_chain_and_bucket_array(cur_index, relation->get_hist_array()[j]);
-//         //scan whole bucket in order to calculate its chain and bucket array
-//         int upper_limit = relation->get_psum_array()[j] + relation->get_hist_array()[j];
-//         for(int i = relation->get_psum_array()[j]; i < upper_limit; i++){
-//             hash_value = h2(relation->get_new_column()[i].get_value());
-//             cur_index.get_chain_array()[i - relation->get_psum_array()[j]] = cur_index.get_bucket_array()[hash_value];
-//             cur_index.get_bucket_array()[hash_value] = i - relation->get_psum_array()[j];
-//         }
-//     }
-//     cout << "Indexing completed successfully!" << endl;
-//     return 0;
-// }
-//
-// int Joiner::create_and_init_chain_and_bucket_array(Index& index, int hist_array_value){
-//     //create bucket array and initialise it
-//     index.set_bucket_array(h2_num_of_buckets);
-//     for(int i = 0; i < h2_num_of_buckets; i++)
-//         index.get_bucket_array()[i] = -1; //-1 means that there is not previous record in the bucket
-//
-//     //create chain array and initialise it
-//     index.set_chain_array(hist_array_value);
-//     for(int i = 0; i < hist_array_value; i++)
-//         index.get_chain_array()[i] = 0;
-//
-//     return 0;
-// }
+    //create vectors
+    new2_column[0] = new vector<NewColumnEntry2>();
+    new2_column[1] = new vector<NewColumnEntry2>();
+
+    uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+    uint64_t* column2 = query->get_relations()[predicate->relation2]->get_column(predicate->column2);
+
+    if(join_type == 0){
+        //temporal array needed to calculate new_columnentry. this array is copy of psum array initially
+        int copy_of_psum_array0[h1_num_of_buckets];
+        for(int j = 0; j < h1_num_of_buckets; j++)
+            copy_of_psum_array0[j] = psum_array[0][j];
+
+        int copy_of_psum_array1[h1_num_of_buckets];
+        for(int j = 0; j < h1_num_of_buckets; j++)
+            copy_of_psum_array1[j] = psum_array[1][j];
+
+        //create new column entries lmao
+        if(result_buffer == NULL || result_buffer->size() == 0){
+            cout << "NULL" << endl;
+            return -1;
+        }
+
+        vector<uint64_t>::iterator it1 = result_buffer->begin();
+        int hash_value;
+        vector<uint64_t>::iterator it2;
+
+        while( it1 != result_buffer->end() ){
+            hash_value = h1(column1[*(it1 + predicate->relation1)]);
+            it2 = new2_column[0]->begin() + copy_of_psum_array0[hash_value];
+            new2_column[0]->insert(it2,NewColumnEntry2(*(it1 + predicate->relation1), column1[*(it1 + predicate->relation1)]));
+            new2_column[0]->add_to_set(result_buffer[*(it1 + predicate->relation2)]);
+            copy_of_psum_array0[hash_value]++;
+
+            hash_value = h1(column2[*(it1 + predicate->relation2)]);
+            it2 = new2_column[1]->begin() + copy_of_psum_array1[hash_value];
+            new2_column[1]->insert(it2,NewColumnEntry2(*(it1 + predicate->relation2), column2[*(it1 + predicate->relation2)]));
+            new2_column[1]->add_to_set(result_buffer[*(it1 + predicate->relation1)]);
+            copy_of_psum_array1[hash_value]++;
+
+            it1 += query->get_num_of_processed_relations();
+        }
+    }
+    return 0;
+}
+
+
+int Joiner::indexing(){
+    //choose the smallest relation to index
+    vector<NewColumnEntry2>* column = NULL;
+    uint64_t* hist_array = NULL;
+    uint64_t* psum_array = NULL;
+    if(new2_column[0]->size() < new2_column[1]->size()){
+        column = new2_column[0];
+        hist_array = hist_array[0];
+        psum_array = psum_array[0];
+    }
+    else{
+        column = new2_column[1];
+        hist_array = hist_array[1];
+        psum_array = psum_array[1];
+    }
+
+
+    //create index for every bucket made at segmentation
+    index_array = new Index[h1_num_of_buckets];
+
+    //to make code more readable
+    int hash_value;
+
+    //for every bucket made at segmentation
+    for(int j = 0; j < h1_num_of_buckets; j++){
+        //store current index to a variable to make code more readable
+        create_and_init_chain_and_bucket_array(&index_array[j], hist_array[j]);
+        //scan whole bucket in order to calculate its chain and bucket array
+        int upper_limit = psum_array[j] + hist_array[j];
+        for(int i = psum_array[j]; i < upper_limit; i++){
+            hash_value = h2(column[i]->get_value());
+            index_array[j].get_chain_array()[i - psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
+            index_array[j].get_bucket_array()[hash_value] = i - psum_array[j];
+        }
+    }
+    cout << "Indexing completed successfully!" << endl;
+    return 0;
+}
+
+int Joiner::create_and_init_chain_and_bucket_array(Index* index, int hist_array_value){
+    //create bucket array and initialise it
+    index->set_bucket_array(h2_num_of_buckets);
+    for(int i = 0; i < h2_num_of_buckets; i++)
+        index->get_bucket_array()[i] = -1; //-1 means that there is not previous record in the bucket
+
+    //create chain array and initialise it
+    index->set_chain_array(hist_array_value);
+    for(int i = 0; i < hist_array_value; i++)
+        index->get_chain_array()[i] = 0;
+
+    return 0;
+}
 //
 // int Joiner::join(){
 //     //r0 --> NOT Indexed relation
