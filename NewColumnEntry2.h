@@ -1,5 +1,5 @@
 #include "stdint.h"
-#include <bits/stdc++.h> //unordered_set
+#include <unordered_set>
 
 class NewColumnEntry2{
     uint64_t row_id;
@@ -8,8 +8,10 @@ class NewColumnEntry2{
 
 public:
     NewColumnEntry2(uint64_t row_id, uint64_t value):
-    row_id(row_id), value(value), related_row_ids(new std::unordered_set<uint64_t>())
-    {}
+    row_id(row_id), value(value)
+    {
+        related_row_ids = new std::unordered_set<uint64_t>();
+    }
     ~NewColumnEntry2(){
         delete related_row_ids;
     }
@@ -21,7 +23,7 @@ public:
       operator = (entry);
     }
 
-    uint64_t get_row_id(){
+    uint64_t get_index(){
         return row_id;
     }
 
@@ -36,7 +38,12 @@ public:
         return *this;
     }
 
-    int add_to_set(uint64_t row_id){
-        related_row_ids->insert(row_id);
+    int add_to_set(uint64_t row_id1){
+        // if(related_row_ids == NULL) cout << "NOOO\n";
+        // cout << "val=\n" << endl << std::flush;
+        // cout << row_id1 << endl << std::flush;
+        cout << row_id1 << endl;
+        related_row_ids->insert(row_id1);
+        cout << "meta" << endl;
     }
 };

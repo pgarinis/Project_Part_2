@@ -79,6 +79,14 @@ int DatabaseSystem::execute_query(){
         }
         else{//JOIN
             join(predicates[i], is_processed);
+            if(is_processed[predicates[i]->relation1] == 0){
+                is_processed[predicates[i]->relation1] = 1;
+                query->incr_num_of_processed_relations();
+            }
+            if(is_processed[predicates[i]->relation2] == 0){
+                is_processed[predicates[i]->relation2] = 1;
+                query->incr_num_of_processed_relations();
+            }
         }
         // results->print_list(predicates[i]->relation1);
         cout << "Predicate DONE\n";

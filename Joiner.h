@@ -13,6 +13,7 @@
 #include <vector>
 #include "Index.h"
 #include "NewColumnEntry2.h"
+#include "NewColumnEntry.h"
 
 using namespace std;
 
@@ -26,6 +27,7 @@ class Joiner{
     NewColumnEntry* new_column[2];
     vector<NewColumnEntry2>* new2_column[2];
     Index* index_array;
+    int join_index;
     uint64_t* psum_array[2];
     uint64_t* hist_array[2];
 
@@ -92,7 +94,7 @@ class Joiner{
     // [1MB mem block] format : [uint64_t|uint64_t|uint64_t|uint64_t...] without '|'
     // each pair is a result from the join query
     // */
-    // int join();
+    int join();
 };
 
 #endif /* end of include guard: JOINER_H */
