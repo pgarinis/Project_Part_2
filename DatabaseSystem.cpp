@@ -179,12 +179,8 @@ int DatabaseSystem::filter(Predicate* predicate){
 int DatabaseSystem::join(Predicate* predicate, int* is_processed){
     //both relatinos are processed already
     if(is_processed[predicate->relation1] && is_processed[predicate->relation2]){
-        //metasximatismos listas parallhla se 2 pinakes r1' r2'
-        //join_nn()
-        //index ton mikrotero pinaka
-
         //new joiner to handle join predicate with type 0 (not original - not original)
-        this->joiner = new Joiner(this->query, predicate, is_processed, this->result_buffer,0);
+        this->joiner = new Joiner(this->query, predicate, is_processed, &this->result_buffer,0);
 
 
     }
@@ -199,7 +195,7 @@ int DatabaseSystem::join(Predicate* predicate, int* is_processed){
     //neiter of the 2 relations are processed, results is NULL
     else if(result_buffer == NULL)
     {
-        //join_oo()
+        this->joiner = new Joiner(this->query, predicate, is_processed, &this->result_buffer,2);
     }
 }
 //

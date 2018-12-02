@@ -1,7 +1,7 @@
 #ifndef JOINER_H
 #define JOINER_H
 
-
+#include <bits/stdc++.h> //unordered_set
 #include <fstream>
 #include <stdint.h>
 #include <string>
@@ -12,6 +12,7 @@
 #include "Query.h"
 #include <vector>
 #include "Index.h"
+#include "NewColumnEntry2.h"
 
 using namespace std;
 
@@ -19,10 +20,10 @@ class Joiner{
     //pass from dbsystem
     Query* query;
     Predicate* predicate;
-    vector<uint64_t>* result_buffer;
+    vector<uint64_t>** result_buffer;
     int* is_processed;
 
-    //NewColumnEntry* new_column[2];
+    NewColumnEntry* new_column[2];
     vector<NewColumnEntry2>* new2_column[2];
     Index* index_array;
     uint64_t* psum_array[2];
@@ -36,7 +37,7 @@ class Joiner{
     int join_type;
 
   public:
-    Joiner(Query* query, Predicate* predicate, int* is_processed, vector<uint64_t>* result_buffer,int type);
+    Joiner(Query* query, Predicate* predicate, int* is_processed, vector<uint64_t>** result_buffer,int type);
     ~Joiner();
     /*  getters - setters */
 
@@ -48,7 +49,7 @@ class Joiner{
       return h2_num_of_buckets;
     }
 
-    vector<uint64_t>* get_result_buffer(){
+    vector<uint64_t>** get_result_buffer(){
         return this->result_buffer;
     }
 
@@ -84,7 +85,7 @@ class Joiner{
         /*
         creates and initialises chain and bucket array from the bucket's index
         */
-        int create_and_init_chain_and_bucket_array(Index& index, int hist_array_value);
+        int create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_array_value);
     /*
     // joins two columns(relations) and return index to the list that holds the results:
     // return value = ---->[1MB mem block]---->[1MB mem block]--->(...)--->NULL
