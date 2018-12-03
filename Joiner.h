@@ -22,24 +22,30 @@ class Joiner{
     Query* query;
     Predicate* predicate;
     vector<uint64_t>** result_buffer;
-    int* is_processed;
 
-    NewColumnEntry* new_column[2];
-    vector<NewColumnEntry2>* new2_column[2];
-    Index* index_array;
-    int join_index;
+    int join_type;
+    //0 : oo
+    //1 : no
+    //2 : nn
+
     uint64_t* psum_array[2];
     uint64_t* hist_array[2];
+    NewColumnEntry* new_column[2];
+    NewColumnEntry2* new2_column[2];
+    unordered_set<uint64_t>* temp_set[2];
+    Index* index_array;
+    int join_index;
+    int order;
+    //order == 1 => predicate->relation1<predicate->relation2 && join_index==0
+    //order == 0 => predicate->relation1<predicate->relation2 && join_index==0
 
+    //variables needed for hash functions
     int h1_num_of_buckets;
     int h2_num_of_buckets;
     int h1_num_of_bits;
     int h2_num_of_bits;
-
-    int join_type;
-
   public:
-    Joiner(Query* query, Predicate* predicate, int* is_processed, vector<uint64_t>** result_buffer,int type);
+    Joiner(vector<uint64_t>** result_buffer);
     ~Joiner();
     /*  getters - setters */
 
@@ -57,10 +63,10 @@ class Joiner{
 
     //hash function for segmentation
     inline int h1(uint64_t num){return (num & (h1_num_of_buckets - 1));};
-    //inline int h1(uint64_t num){return num % 131;};
     //hash function for indexing
-    //inline int h2(uint64_t num){return ((num & ((h2_num_of_buckets - 1) << h2_num_of_bits)) >> h2_num_of_bits);};
     inline int h2(uint64_t num){return num % 16699;};
+
+    int do_everything(Query* query, Predicate* predicate,int type);
 
     /*
     rearranges every column's records in order to create a new column where records

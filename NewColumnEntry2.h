@@ -1,49 +1,23 @@
-#include "stdint.h"
+#pragma once
+#include "NewColumnEntry.h"
 #include <unordered_set>
+using namespace std;
 
-class NewColumnEntry2{
-    uint64_t row_id;
-    uint64_t value;
-    std::unordered_set<uint64_t>* related_row_ids;
+class NewColumnEntry2 : public NewColumnEntry{
+    unordered_set<uint64_t>* related_row_ids;
 
 public:
-    NewColumnEntry2(uint64_t row_id, uint64_t value):
-    row_id(row_id), value(value)
-    {
-        related_row_ids = new std::unordered_set<uint64_t>();
-    }
+    NewColumnEntry2():
+        related_row_ids(new unordered_set<uint64_t>())
+    {}
+
     ~NewColumnEntry2(){
         delete related_row_ids;
     }
 
-    NewColumnEntry2(const NewColumnEntry2 &entry) {
-      // allocate variables
-      NewColumnEntry2(entry.row_id,entry.value);
-      // copy values
-      operator = (entry);
-    }
-
-    uint64_t get_index(){
-        return row_id;
-    }
-
-    uint64_t get_value(){
-        return value;
-    }
-
-    const NewColumnEntry2& operator = (const NewColumnEntry2 &entry) {
-        this->related_row_ids = entry.related_row_ids;
-        this->row_id = entry.row_id;
-        this->value = entry.value;
-        return *this;
-    }
+    unordered_set<uint64_t>* get_related_row_ids(){ return related_row_ids;}
 
     int add_to_set(uint64_t row_id1){
-        // if(related_row_ids == NULL) cout << "NOOO\n";
-        // cout << "val=\n" << endl << std::flush;
-        // cout << row_id1 << endl << std::flush;
-        cout << row_id1 << endl;
         related_row_ids->insert(row_id1);
-        cout << "meta" << endl;
     }
 };

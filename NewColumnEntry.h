@@ -1,20 +1,17 @@
 #pragma once
-#include <fstream>
-#include <cinttypes>
-#include <string>
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
+#include <stdint.h>
 
 class NewColumnEntry{
-    int index;
+    uint64_t row_id;
     uint64_t value;
 public:
+    //getter
+    uint64_t get_row_id(){ return this->row_id;}
+    uint64_t get_value() { return this->value;}
+
     //sets tuple
-    void set(int index, uint64_t value){
-        this->index = index;
+    void set(uint64_t row_id, uint64_t value){
+        this->row_id = row_id;
         this->value = value;
     }
-    int get_index(){ return this->index; };
-    uint64_t get_value() { return this->value; };
 };

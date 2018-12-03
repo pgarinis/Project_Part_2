@@ -30,6 +30,9 @@ class Query{
     int num_of_projections;
 
     int num_of_processed_relations;
+    //is_processed[0] == 0 means that query's relation with relative index 0
+    //hasn't been processed yet in this query
+    int* is_processed;
 public:
     Query();
     ~Query();
@@ -43,6 +46,7 @@ public:
     int get_num_of_projections(){ return this->num_of_projections;}
 
     int get_num_of_processed_relations(){ return this->num_of_processed_relations;}
+    int* get_is_processed(){ return this->is_processed;}
 
     //setters
     void set_num_of_relations(int num){ this->num_of_relations = num;}

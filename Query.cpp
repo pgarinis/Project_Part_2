@@ -18,6 +18,7 @@ Query::~Query(){
     free(relations);
     free(predicates);
     free(projections);
+    free(is_processed);
 }
 
 int Query::read_query(Relation** db_relations, int db_num_of_relations){
@@ -49,6 +50,7 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         relations[num_of_relations - 1] = db_relations[atoi(token)];
         token = strtok(NULL, " ");
     }
+    is_processed = (int*)calloc(num_of_relations, sizeof(int));
 
     //0.1=1.2&1.0=2.1&0.1>3000
     //SECOND FIELD
