@@ -9,7 +9,9 @@ class NewColumnEntry2 : public NewColumnEntry{
 public:
     NewColumnEntry2():
         related_row_ids(new unordered_set<uint64_t>())
-    {}
+    {
+        NewColumnEntry();
+    }
 
     ~NewColumnEntry2(){
         delete related_row_ids;

@@ -113,6 +113,10 @@ int DatabaseSystem::filter(Predicate* predicate){
 
     //search either results or respective column, depending on previous predicates executed
     if(result_buffer->size() == 0){ //search whole original column
+        //set order right
+        query->get_order()[query->get_order_index()] = predicate->relation1;
+        query->incr_order_index();
+
         uint64_t num_of_records = query->get_relations()[predicate->relation1]->get_num_of_records();
         for(uint64_t i = 0; i < num_of_records; i++){
             //if node is qualified to pass the filter, add it to the result list
@@ -124,10 +128,16 @@ int DatabaseSystem::filter(Predicate* predicate){
         }
     }
     else{ //search result_buffer
+        //find relation's offset in tuple
+        int offset = query->find_offset(predicate->relation1);
+
+        //store new results in new_result_buffer
         vector<uint64_t>* new_result_buffer = new vector<uint64_t>();
+
+        //iterate over result buffer
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()) {
-            if(op_fun(column[*(it + predicate->relation1)], predicate->value)){
+            if(op_fun(column[*(it + offset)], predicate->value)){
                 //push_back whole tuple
                 for(int i = 0; i < query->get_num_of_processed_relations(); i++)
                     new_result_buffer->push_back(*(it+i));
@@ -145,6 +155,8 @@ int DatabaseSystem::self_join(Predicate* predicate){
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
 
+
+
     //search either results or respective column, depending on previous predicates executed
     if(result_buffer->size() == 0){ //search whole original column
         uint64_t num_of_records = query->get_relations()[predicate->relation1]->get_num_of_records();
@@ -158,10 +170,11 @@ int DatabaseSystem::self_join(Predicate* predicate){
         }
     }
     else{ //search result_buffer
+        int offset = query->find_offset(predicate->relation1);
         vector<uint64_t>* new_result_buffer = new vector<uint64_t>();
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()) {
-            if(column1[*(it + predicate->relation1)] == column2[*(it + predicate->relation1)]){
+            if(column1[*(it + offset)] == column2[*(it + offset)]){
                 //push_back whole tuple
                 for(int i = 0; i < query->get_num_of_processed_relations(); i++)
                     new_result_buffer->push_back(*(it+i));

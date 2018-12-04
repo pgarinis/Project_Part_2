@@ -1,7 +1,6 @@
 #ifndef QUERY_H
 #define QUERY_H
 
-
 #include "Relation.h"
 
 typedef struct{
@@ -53,6 +52,12 @@ public:
     int* get_order(){ return this->order;}
     int get_order_index(){ return this->order_index;}
     void incr_order_index(){ this->order_index++;}
+    int find_offset(int relation_id){
+        for(int i = 0; i < order_index; i++){
+            if(order[i] == relation_id)
+                return i;
+        }
+    }
 
     //setters
     void set_num_of_relations(int num){ this->num_of_relations = num;}

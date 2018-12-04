@@ -134,28 +134,34 @@ int Joiner::create_and_compute_new_column(){
 
 
     if(join_type == 0){
+        cout << "sizes : "<< temp_set[0]->size() << endl;
+        cout << "sizes : "<< temp_set[1]->size() << endl;
         //create vectors
         new2_column[0] = (NewColumnEntry2*)malloc(temp_set[0]->size() * sizeof(NewColumnEntry2));
         new2_column[1] = (NewColumnEntry2*)malloc(temp_set[1]->size() * sizeof(NewColumnEntry2));
 
-        //it1 is for result buffer
+        //iterator for result_buffer
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
+        vector<uint64_t>::iterator it0, it1;
         int hash_value;
 
         //iterate over result buffer
         while(it != (*result_buffer)->end()){
-            hash_value = h1(column[0][*(it + predicate->relation1)]);
+            it0 = it + predicate->relation1;
+            hash_value = h1(column[0][*it0]);
             //determine the index in the new column
             //if its first time adding this row_id to new2_column[0]
             if(new2_column[0][copy_of_psum_array0[hash_value]].get_row_id() == -1){
-                new2_column[0][copy_of_psum_array0[hash_value]].set(*(it + predicate->relation1) ,column[0][*(it + predicate->relation1)]);
+                cout << "mphkE!\n";
+                new2_column[0][copy_of_psum_array0[hash_value]].set(*it0 ,column[0][*it0]);
                 copy_of_psum_array0[hash_value]++;
             }
 
-            hash_value = h1(column[1][*(it + predicate->relation2)]);
+            it1 = it + predicate->relation2;
+            hash_value = h1(column[1][*it1]);
             //if its first time adding this row_id to new2_column[1]
             if(new2_column[1][copy_of_psum_array1[hash_value]].get_row_id() == -1){
-                new2_column[1][copy_of_psum_array1[hash_value]].set(*(it + predicate->relation2) ,column[1][*(it + predicate->relation2)]);
+                new2_column[1][copy_of_psum_array1[hash_value]].set(*it1 ,column[1][*it1]);
                 copy_of_psum_array1[hash_value]++;
             }
 
@@ -185,29 +191,33 @@ int Joiner::create_and_compute_new_column(){
 }
 
 int Joiner::indexing(){
-    //result buffer is null, both relations original
-    //choose the smallest relation to index
-    if(join_type == 2){
+
+    if(join_type == 0){
+        cout << temp_set[0]->size() << " vs " << temp_set[1]->size() << endl;
+        join_index = temp_set[1]->size() < temp_set[0]->size();
+    }
+    else if(join_type == 2){
+        //result buffer is null, both relations original
+        //choose the smallest relation to index
         join_index =
             query->get_relations()[predicate->relation2]->get_num_of_records()
             <
             query->get_relations()[predicate->relation1]->get_num_of_records();
-            if(join_index == 1){
-                query->get_order()[query->get_order_index()] = predicate->relation1;
-                query->incr_order_index();
-                query->get_order()[query->get_order_index()] = predicate->relation2;
-            }
-            else if(join_index == 0){
-                query->get_order()[query->get_order_index()] = predicate->relation2;
-                query->incr_order_index();
-                query->get_order()[query->get_order_index()] = predicate->relation1;
-            }
+
+        //set order[] from query accordingly(push order : undindexed -> indexed)
+        if(join_index == 1){
+            query->get_order()[query->get_order_index()] = predicate->relation1;
             query->incr_order_index();
+            query->get_order()[query->get_order_index()] = predicate->relation2;
+        }
+        else if(join_index == 0){
+            query->get_order()[query->get_order_index()] = predicate->relation2;
+            query->incr_order_index();
+            query->get_order()[query->get_order_index()] = predicate->relation1;
+        }
+        query->incr_order_index();
     }
-    else if(join_type == 0){
-        cout << temp_set[0]->size() << " vs " << temp_set[1]->size() << endl;
-        join_index = temp_set[1]->size() < temp_set[0]->size();
-    }
+
 
     cout << "Join index is : "<<join_index << endl;
 
@@ -231,7 +241,6 @@ int Joiner::indexing(){
         create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
         //scan whole bucket in order to calculate its chain and bucket array
         int upper_limit = cur_psum_array[j] + cur_hist_array[j];
-        cout << upper_limit << "~~~~~~~~~~~~~~~~~~\n";
         for(int i = cur_psum_array[j]; i < upper_limit; i++){
             hash_value = h2(column[i].get_value());
             index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
@@ -306,6 +315,7 @@ int Joiner::join(){
             num_of_rows = query->get_relations()[predicate->relation1]->get_num_of_records();
         else if(join_index == 1)
             num_of_rows = query->get_relations()[predicate->relation2]->get_num_of_records();
+            
         for(uint64_t i = 0; i < num_of_rows; i++){
             //for easier reading of code
             NewColumnEntry cur_row = r0[i];
