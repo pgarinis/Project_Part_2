@@ -19,6 +19,7 @@ Query::~Query(){
     free(predicates);
     free(projections);
     free(is_processed);
+    free(order);
 }
 
 int Query::read_query(Relation** db_relations, int db_num_of_relations){
@@ -51,6 +52,8 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         token = strtok(NULL, " ");
     }
     is_processed = (int*)calloc(num_of_relations, sizeof(int));
+    order = (int*)malloc(num_of_relations * sizeof(int));
+    order_index = 0;
 
     //0.1=1.2&1.0=2.1&0.1>3000
     //SECOND FIELD

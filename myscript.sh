@@ -1,3 +1,3 @@
-g++ -std=c++11 *p
+#g++ -std=c++11 *p
 ./a.out < input.txt
-rm a.out
+#rm a.out

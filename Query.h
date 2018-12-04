@@ -33,6 +33,8 @@ class Query{
     //is_processed[0] == 0 means that query's relation with relative index 0
     //hasn't been processed yet in this query
     int* is_processed;
+    int* order;
+    int order_index;
 public:
     Query();
     ~Query();
@@ -47,6 +49,10 @@ public:
 
     int get_num_of_processed_relations(){ return this->num_of_processed_relations;}
     int* get_is_processed(){ return this->is_processed;}
+
+    int* get_order(){ return this->order;}
+    int get_order_index(){ return this->order_index;}
+    void incr_order_index(){ this->order_index++;}
 
     //setters
     void set_num_of_relations(int num){ this->num_of_relations = num;}
