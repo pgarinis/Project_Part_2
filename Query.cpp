@@ -9,8 +9,7 @@
 Query::Query():
 relations(NULL), num_of_relations(0),
 predicates(NULL), num_of_predicates(0),
-projections(NULL), num_of_projections(0),
-num_of_processed_relations(0)
+projections(NULL), num_of_projections(0)
 {
 }
 
@@ -18,7 +17,6 @@ Query::~Query(){
     free(relations);
     free(predicates);
     free(projections);
-    free(is_processed);
     free(order);
 }
 
@@ -51,8 +49,10 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         relations[num_of_relations - 1] = db_relations[atoi(token)];
         token = strtok(NULL, " ");
     }
-    is_processed = (int*)calloc(num_of_relations, sizeof(int));
+    //initiliase order array; every element is initially -1
     order = (int*)malloc(num_of_relations * sizeof(int));
+    for(int i = 0; i < num_of_relations; i++)
+        order[i] = -1;
     order_index = 0;
 
     //0.1=1.2&1.0=2.1&0.1>3000

@@ -31,7 +31,6 @@ class Joiner{
     uint64_t* psum_array[2];
     uint64_t* hist_array[2];
     NewColumnEntry* new_column[2];
-    NewColumnEntry2* new2_column[2];
     uint64_t* column[2]; //pointers to original columns
     unordered_set<uint64_t>* temp_set[2];
     Index* index_array;

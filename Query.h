@@ -33,7 +33,7 @@ class Query{
     //hasn't been processed yet in this query
     int* is_processed;
     int* order;
-    int order_index;
+    int order_index; //order_index is essentially tuple's size
 public:
     Query();
     ~Query();
@@ -46,26 +46,22 @@ public:
     Projection** get_projections(){ return this->projections;}
     int get_num_of_projections(){ return this->num_of_projections;}
 
-    int get_num_of_processed_relations(){ return this->num_of_processed_relations;}
-    int* get_is_processed(){ return this->is_processed;}
-
     int* get_order(){ return this->order;}
     int get_order_index(){ return this->order_index;}
+    int get_tuple_size(){ return this->order_index;}//same function as the above, used for easier read of code
     void incr_order_index(){ this->order_index++;}
     int find_offset(int relation_id){
         for(int i = 0; i < order_index; i++){
             if(order[i] == relation_id)
                 return i;
         }
+        return -1; //return -1 if it is not found
     }
 
     //setters
     void set_num_of_relations(int num){ this->num_of_relations = num;}
     void set_num_of_predicates(int num){ this->num_of_predicates = num;}
     void set_num_of_projections(int num){ this->num_of_projections = num;}
-    void incr_num_of_processed_relations(){ this->num_of_processed_relations++;}
-
-
 
 
     int read_query(Relation** db_relations, int db_num_of_relations);

@@ -58,41 +58,21 @@ int DatabaseSystem::construct_query(){
 int DatabaseSystem::execute_query(){
     //get predicates from query in order to iterate over them
     Predicate** predicates = query->get_predicates();
-    //get is_processed array from query
-    int* is_processed = query->get_is_processed();
 
     //for every predicate
     for(int i = 0; i < query->get_num_of_predicates(); i++){
         if(predicates[i]->relation2 == -1){//FILTER
             filter(predicates[i]);
-            if(is_processed[predicates[i]->relation1] == 0){
-                is_processed[predicates[i]->relation1] = 1;
-                query->incr_num_of_processed_relations();
-            }
         }
         if(predicates[i]->relation1 == predicates[i]->relation2){//SELF JOIN
             self_join(predicates[i]);
-            if(is_processed[predicates[i]->relation1] == 0){
-                is_processed[predicates[i]->relation1] = 1;
-                query->incr_num_of_processed_relations();
-            }
         }
         else{//JOIN
-            join(predicates[i], is_processed);
-            if(is_processed[predicates[i]->relation1] == 0){
-                is_processed[predicates[i]->relation1] = 1;
-                query->incr_num_of_processed_relations();
-            }
-            if(is_processed[predicates[i]->relation2] == 0){
-                is_processed[predicates[i]->relation2] = 1;
-                query->incr_num_of_processed_relations();
-            }
+            join(predicates[i]);
         }
         print_result_buffer();
         cout << "Predicate DONE\n";
     }
-    //results->print_list(predicates[0]->relation1);
-    //print_result_buffer();
 
     delete result_buffer;
     delete query;
@@ -117,6 +97,7 @@ int DatabaseSystem::filter(Predicate* predicate){
         query->get_order()[query->get_order_index()] = predicate->relation1;
         query->incr_order_index();
 
+        //search whole original column
         uint64_t num_of_records = query->get_relations()[predicate->relation1]->get_num_of_records();
         for(uint64_t i = 0; i < num_of_records; i++){
             //if node is qualified to pass the filter, add it to the result list
@@ -139,10 +120,10 @@ int DatabaseSystem::filter(Predicate* predicate){
         while(it != result_buffer->end()) {
             if(op_fun(column[*(it + offset)], predicate->value)){
                 //push_back whole tuple
-                for(int i = 0; i < query->get_num_of_processed_relations(); i++)
+                for(int i = 0; i < query->get_tuple_size(); i++)
                     new_result_buffer->push_back(*(it+i));
             }
-            it += query->get_num_of_processed_relations();
+            it += query->get_tuple_size();
         }
         delete result_buffer;
         result_buffer = new_result_buffer;
@@ -157,6 +138,11 @@ int DatabaseSystem::self_join(Predicate* predicate){
 
     //search either results or respective column, depending on previous predicates executed
     if(result_buffer->size() == 0){ //search whole original column
+        //set order right
+        query->get_order()[query->get_order_index()] = predicate->relation1;
+        query->incr_order_index();
+
+        //search whole original column
         uint64_t num_of_records = query->get_relations()[predicate->relation1]->get_num_of_records();
         for(uint64_t i = 0; i < num_of_records; i++){
             //if node is qualified to pass the filter, add it to the list
@@ -168,16 +154,18 @@ int DatabaseSystem::self_join(Predicate* predicate){
         }
     }
     else{ //search result_buffer
+        //find relation's offset in tuple
         int offset = query->find_offset(predicate->relation1);
+
         vector<uint64_t>* new_result_buffer = new vector<uint64_t>();
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()) {
             if(column1[*(it + offset)] == column2[*(it + offset)]){
                 //push_back whole tuple
-                for(int i = 0; i < query->get_num_of_processed_relations(); i++)
+                for(int i = 0; i < query->get_tuple_size(); i++)
                     new_result_buffer->push_back(*(it+i));
             }
-            it += query->get_num_of_processed_relations();
+            it += query->get_tuple_size();
         }
         delete result_buffer;
         result_buffer = new_result_buffer;
@@ -185,21 +173,22 @@ int DatabaseSystem::self_join(Predicate* predicate){
     return 0;
 }
 
-int DatabaseSystem::join(Predicate* predicate, int* is_processed){
-    //both relatinos are processed already
-    if(is_processed[predicate->relation1] && is_processed[predicate->relation2]){
+int DatabaseSystem::join(Predicate* predicate){
+    //both relations are processed already
+    if((query->find_offset(predicate->relation1) != -1) &&
+       (query->find_offset(predicate->relation2) != -1)){
         //not original - not original
         joiner->do_everything(query, predicate, 0);
     }
     //only relation1 is processed already
-    else if(is_processed[predicate->relation1]){
+    else if(query->find_offset(predicate->relation1) != -1){
         //join_on()
     }
     //only relation2 is processed already
-    else if(is_processed[predicate->relation2]){
+    else if(query->find_offset(predicate->relation2) != -1){
 
     }
-    //neiter of the 2 relations are processed, results is NULL
+    //neiter of the 2 relations are processed, first predicate
     else if(result_buffer->size() == 0)
     {
         joiner->do_everything(query, predicate, 2);
