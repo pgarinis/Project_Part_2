@@ -35,7 +35,7 @@ class Joiner{
     unordered_set<uint64_t>* temp_set[2];
     Index* index_array;
     int join_index;
-    int order;
+    int* order;
     //order == 1 => predicate->relation1<predicate->relation2 && join_index==0
     //order == 0 => predicate->relation1<predicate->relation2 && join_index==0
 

@@ -49,18 +49,18 @@ int Joiner::create_and_compute_hist_array(){
     if(join_type == 0){
         //iterator for result buffer
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
-
         //compute hist_array for both relations
         while( it != (*result_buffer)->end()) {
+
             //hist_array for relation1
-            if(temp_set[0]->find(*(it + predicate->relation1)) != temp_set[0]->end()){
+            if(temp_set[0]->find(*(it + predicate->relation1)) == temp_set[0]->end()){
                 temp_set[0]->insert(*(it + predicate->relation1));
                 hash_value = h1(column1[*(it + predicate->relation1)]); //iterator has rowId, hash the value of that rowId
                 hist_array[0][hash_value]++;
             }
 
             //hist_array for relation2
-            if(temp_set[1]->find(*(it + predicate->relation2)) != temp_set[1]->end()){
+            if(temp_set[1]->find(*(it + predicate->relation2)) == temp_set[1]->end()){
                 temp_set[1]->insert(*(it + predicate->relation2));
                 //hist_array for relation 2
                 hash_value = h1(column2[*(it + predicate->relation2)]); //iterator has rowId, hash the value of that rowId
@@ -126,36 +126,33 @@ int Joiner::create_and_compute_new_column(){
 
 
     if(join_type == 0){
-        // //create vectors
-        // new2_column[0] = (NewColumnEntry2*)malloc(temp_set[0].size(), sizeof(NewColumnEntry2));
-        // new2_column[1] = (NewColumnEntry2*)malloc(temp_set[1].size(), sizeof(NewColumnEntry2));
-        //
-        // //it1 is for result buffer
-        // vector<uint64_t>::iterator it1 = (*result_buffer)->begin();
-        // int hash_value;
-        //
-        // //iterate over result buffer
-        // while(it1 != (*result_buffer)->end()){
-        //     hash_value = h1(column1[*(it1 + predicate->relation1)]);
-        //     //determine the index in the new column
-        //     if(new2_column[copy_of_psum_array0[hash_value]]){
-        //
-        //     }
-        //     //insert rowId,value in new column;
-        //     new2_column[0]->insert(it2,NewColumnEntry2(*(it1 + predicate->relation1), column1[*(it1 + predicate->relation1)]));
-        //     //add related rowId to new column entry set
-        //     cout <<*(it1 + predicate->relation2) <<endl;
-        //     it2->add_to_set(*(it1 + predicate->relation2));
-        //     copy_of_psum_array0[hash_value]++;
-        //
-        //     hash_value = h1(column2[*(it1 + predicate->relation2)]);
-        //     it2 = new2_column[1]->begin() + copy_of_psum_array1[hash_value];
-        //     new2_column[1]->insert(it2,NewColumnEntry2(*(it1 + predicate->relation2), column2[*(it1 + predicate->relation2)]));
-        //     it2->add_to_set(*(it1 + predicate->relation1));
-        //     copy_of_psum_array1[hash_value]++;
-        //
-        //     it1 += query->get_num_of_processed_relations();
-        // }
+        //create vectors
+        new2_column[0] = (NewColumnEntry2*)malloc(temp_set[0]->size() * sizeof(NewColumnEntry2));
+        new2_column[1] = (NewColumnEntry2*)malloc(temp_set[1]->size() * sizeof(NewColumnEntry2));
+
+        //it1 is for result buffer
+        vector<uint64_t>::iterator it = (*result_buffer)->begin();
+        int hash_value;
+
+        //iterate over result buffer
+        while(it != (*result_buffer)->end()){
+            hash_value = h1(column1[*(it + predicate->relation1)]);
+            //determine the index in the new column
+            //if its first time adding this row_id to new2_column[0]
+            if(new2_column[0][copy_of_psum_array0[hash_value]].get_row_id() == -1){
+                new2_column[0][copy_of_psum_array0[hash_value]].set(*(it + predicate->relation1) ,column1[*(it + predicate->relation1)]);
+                copy_of_psum_array0[hash_value]++;
+            }
+
+            hash_value = h1(column2[*(it + predicate->relation2)]);
+            //if its first time adding this row_id to new2_column[1]
+            if(new2_column[1][copy_of_psum_array1[hash_value]].get_row_id() == -1){
+                new2_column[1][copy_of_psum_array1[hash_value]].set(*(it + predicate->relation2) ,column2[*(it + predicate->relation2)]);
+                copy_of_psum_array1[hash_value]++;
+            }
+
+            it += query->get_num_of_processed_relations();
+        }
     }
     else if(join_type == 2){
         uint64_t num_records1 = query->get_relations()[predicate->relation1]->get_num_of_records();
@@ -180,75 +177,46 @@ int Joiner::create_and_compute_new_column(){
 }
 
 int Joiner::indexing(){
-    if(join_type == 0){
-        // //choose the smallest relation to index
-        // vector<NewColumnEntry2>* column = NULL;
-        // uint64_t* cur_hist_array = NULL;
-        // uint64_t* cur_psum_array = NULL;
-        // if(new2_column[0]->size() < new2_column[1]->size()){
-        //     join_index = 0;
-        //     column = new2_column[0];
-        //     cur_hist_array = hist_array[0];
-        //     cur_psum_array = psum_array[0];
-        // }
-        // else{
-        //     join_index = 1;
-        //     column = new2_column[1];
-        //     cur_hist_array = hist_array[1];
-        //     cur_psum_array = psum_array[1];
-        // }
-        //
-        //
-        // //create index for every bucket made at segmentation
-        // index_array = new Index[h1_num_of_buckets];
-        //
-        // //to make code more readable
-        // int hash_value;
-        //
-        // //for every bucket made at segmentation
-        // for(int j = 0; j < h1_num_of_buckets; j++){
-        //     //store current index to a variable to make code more readable
-        //     create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
-        //     //scan whole bucket in order to calculate its chain and bucket array
-        //     int upper_limit = cur_psum_array[j] + cur_hist_array[j];
-        //     for(int i = cur_psum_array[j]; i < upper_limit; i++){
-        //         vector<NewColumnEntry2>::iterator it = column->begin() + i;
-        //         hash_value = h2(it->get_value());
-        //         index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
-        //         index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
-        //     }
-        // }
-    }
-    else if(join_type == 2){
-        //result buffer is null, both relations original
-        //choose the smallest relation to index
+    //result buffer is null, both relations original
+    //choose the smallest relation to index
+    if(join_type == 2){
         join_index =
             query->get_relations()[predicate->relation2]->get_num_of_records()
             <
             query->get_relations()[predicate->relation1]->get_num_of_records();
-        cout << "Join index is : "<<join_index << endl;
+    }
+    else if(join_type == 0){
+        cout << temp_set[0]->size() << " vs " << temp_set[1]->size() << endl;
+        join_index = temp_set[1]->size() < temp_set[0]->size();
+    }
 
-        //set variables accordingly to chosen join_index
-        NewColumnEntry* column = new_column[join_index];
-        uint64_t* cur_hist_array = hist_array[join_index];
-        uint64_t* cur_psum_array = psum_array[join_index];
+    cout << "Join index is : "<<join_index << endl;
 
-        //create index for every bucket made at segmentation
-        index_array = new Index[h1_num_of_buckets];
+    //set variables accordingly to chosen join_index
+    NewColumnEntry* column;
+    if(join_type == 2)
+        column = new_column[join_index];
+    else if(join_type == 0)
+        column = new2_column[join_index];
+    uint64_t* cur_hist_array = hist_array[join_index];
+    uint64_t* cur_psum_array = psum_array[join_index];
 
-        //to make code more readable
-        int hash_value;
+    //create index for every bucket made at segmentation
+    index_array = new Index[h1_num_of_buckets];
 
-        //for every bucket made at segmentation
-        for(int j = 0; j < h1_num_of_buckets; j++){
-            create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
-            //scan whole bucket in order to calculate its chain and bucket array
-            int upper_limit = cur_psum_array[j] + cur_hist_array[j];
-            for(int i = cur_psum_array[j]; i < upper_limit; i++){
-                hash_value = h2(column[i].get_value());
-                index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
-                index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
-            }
+    //to make code more readable
+    int hash_value;
+
+    //for every bucket made at segmentation
+    for(int j = 0; j < h1_num_of_buckets; j++){
+        create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
+        //scan whole bucket in order to calculate its chain and bucket array
+        int upper_limit = cur_psum_array[j] + cur_hist_array[j];
+        cout << upper_limit << "~~~~~~~~~~~~~~~~~~\n";
+        for(int i = cur_psum_array[j]; i < upper_limit; i++){
+            hash_value = h2(column[i].get_value());
+            index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
+            index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
         }
     }
     cout << "Indexing completed successfully!" << endl;
@@ -272,50 +240,39 @@ int Joiner::create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_a
 int Joiner::join(){
     vector<uint64_t>* new_vector = new vector<uint64_t>();
     if(join_type == 0){
-        // //r0 --> NOT Indexed relation
-        // vector<NewColumnEntry2>* r0 = new2_column[(join_index+1)%2];
-        // //r1 --> Indexed relation
-        // vector<NewColumnEntry2>* r1 = new2_column[join_index];
-        //
-        // vector<NewColumnEntry2>::iterator it0;
-        // vector<NewColumnEntry2>::iterator it1;
-        //
-        // //for every row in r0
-        // for(int i = 0; i < query->get_relations()[(join_index+1)%2]->get_num_of_records(); i++){
-        //     //for easier reading of code
-        //     it0 = new2_column[(join_index+1)%2]->begin() + i;
-        //     NewColumnEntry2 cur_row = *it0;
-        //
-        //     //take the bucket needed
-        //     int bucket_num = h1(cur_row.get_value());
-        //
-        //     //search index for this record
-        //     int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
-        //
-        //     while(index != -1){
-        //         //cout << r1.new_column[index].value << " vs "  << cur_row.value << endl;
-        //         it1 = new2_column[join_index]->begin() + index + psum_array[join_index][bucket_num];
-        //         if((*it1).get_value() == cur_row.get_value()){
-        //             //tuple [cur_row.get_index() + 1, r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1]
-        //             //cout <<"[" << cur_row.get_index() + 1 << " : "<<r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
-        //             uint64_t row1 = cur_row.get_index() + 1;
-        //             uint64_t row2 = (*it1).get_index() + 1;
-        //             //insert to results with correct order
-        //             if((join_index+1)%2 == 0){
-        //                 printf("%lu ====== %lu\n",row1,row2);
-        //                 new_vector->push_back(row1);
-        //                 new_vector->push_back(row2);
-        //             }
-        //             else{
-        //                 printf("%lu ======= %lu\n",row2,row1);
-        //                 new_vector->push_back(row2);
-        //                 new_vector->push_back(row1);
-        //             }
-        //
-        //         }
-        //         index = index_array[bucket_num].get_chain_array()[index];
-        //     }
-        // }
+        //r0 --> NOT Indexed relation
+        NewColumnEntry2* r0 = new2_column[!join_index];
+        //r1 --> Indexed relation
+        NewColumnEntry2* r1 = new2_column[join_index];
+
+        cout << "will join type = 0....\n";
+        cout << temp_set[!join_index]->size() << endl;
+        //for every row in r0
+        for(int i = 0; i < temp_set[!join_index]->size(); i++){
+            //for easier reading of code
+            NewColumnEntry2 cur_row = r0[i];
+
+            //take the bucket needed
+            int bucket_num = h1(cur_row.get_value());
+
+            //search index for this record
+            int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
+            cout << index << endl;
+            while(index != -1){
+                cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
+                if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
+                    //tuple [cur_row.get_index() + 1, r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1]
+                    //cout <<"[" << cur_row.get_index() + 1 << " : "<<r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
+                    uint64_t row1 = cur_row.get_row_id();
+                    uint64_t row2 = r1[index + psum_array[join_index][bucket_num]].get_row_id();
+
+                    cout << row1 << "  --  " << row2 << endl;
+
+                    //TODO : print right
+                }
+                index = index_array[bucket_num].get_chain_array()[index];
+            }
+        }
     }
     else if(join_type == 1){}
     else if(join_type == 2){
@@ -325,7 +282,12 @@ int Joiner::join(){
         NewColumnEntry* r1 = new_column[join_index];
 
         //for every row in r0
-        for(int i = 0; i < query->get_relations()[!join_index]->get_num_of_records(); i++){
+        uint64_t num_of_rows;
+        if(join_index == 0)
+            num_of_rows = query->get_relations()[predicate->relation1]->get_num_of_records();
+        else if(join_index == 1)
+            num_of_rows = query->get_relations()[predicate->relation2]->get_num_of_records();
+        for(uint64_t i = 0; i < num_of_rows; i++){
             //for easier reading of code
             NewColumnEntry cur_row = r0[i];
 
@@ -341,17 +303,25 @@ int Joiner::join(){
                 if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
                     //tuple [cur_row.get_index() + 1, r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1]
                     //cout <<"[" << cur_row.get_index() + 1 << " : "<<r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
-                    uint64_t row1 = cur_row.get_row_id() + 1;
-                    uint64_t row2 = r1[index + psum_array[join_index][bucket_num]].get_row_id() + 1;
+                    uint64_t row1 = cur_row.get_row_id();
+                    uint64_t row2 = r1[index + psum_array[join_index][bucket_num]].get_row_id();
                     //insert to results with correct order
                     //TODO: na vrw tropo na kserw poio einai to sosto order~~~~~~~
-                    if(!join_index){
+                    if(join_index == 0 && predicate->relation1 > predicate->relation2){
                         new_vector->push_back(row1);
                         new_vector->push_back(row2);
                     }
-                    else{
+                    else if(join_index == 0 && predicate->relation1 < predicate->relation2){
                         new_vector->push_back(row2);
                         new_vector->push_back(row1);
+                    }
+                    else if(join_index == 1 && predicate->relation1 > predicate->relation2){
+                        new_vector->push_back(row2);
+                        new_vector->push_back(row1);
+                    }
+                    else if(join_index == 1 && predicate->relation1 < predicate->relation2){
+                        new_vector->push_back(row1);
+                        new_vector->push_back(row2);
                     }
 
                 }

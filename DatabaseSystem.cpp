@@ -27,7 +27,7 @@ void DatabaseSystem::print_result_buffer(){
     }
     vector<uint64_t>::iterator it = result_buffer->begin();
     while( it != result_buffer->end()) {
-        cout << *it << endl;
+        cout << *it + 1 << endl;
         it+=1;
     }
 }
@@ -88,7 +88,7 @@ int DatabaseSystem::execute_query(){
                 query->incr_num_of_processed_relations();
             }
         }
-        // results->print_list(predicates[i]->relation1);
+        print_result_buffer();
         cout << "Predicate DONE\n";
     }
     //results->print_list(predicates[0]->relation1);
@@ -177,8 +177,8 @@ int DatabaseSystem::self_join(Predicate* predicate){
 int DatabaseSystem::join(Predicate* predicate, int* is_processed){
     //both relatinos are processed already
     if(is_processed[predicate->relation1] && is_processed[predicate->relation2]){
-        //new joiner to handle join predicate with type 0 (not original - not original)
-        //this->joiner = new Joiner(this->query, predicate, is_processed, &this->result_buffer,0);
+        //not original - not original
+        joiner->do_everything(query, predicate, 0);
     }
     //only relation1 is processed already
     else if(is_processed[predicate->relation1]){
