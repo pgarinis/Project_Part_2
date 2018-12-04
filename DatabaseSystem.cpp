@@ -92,7 +92,7 @@ int DatabaseSystem::execute_query(){
         cout << "Predicate DONE\n";
     }
     //results->print_list(predicates[0]->relation1);
-    print_result_buffer();
+    //print_result_buffer();
 
     delete result_buffer;
     delete query;
