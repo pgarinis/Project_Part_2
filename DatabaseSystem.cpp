@@ -155,8 +155,6 @@ int DatabaseSystem::self_join(Predicate* predicate){
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
 
-
-
     //search either results or respective column, depending on previous predicates executed
     if(result_buffer->size() == 0){ //search whole original column
         uint64_t num_of_records = query->get_relations()[predicate->relation1]->get_num_of_records();

@@ -51,6 +51,12 @@ int Joiner::create_and_compute_hist_array(){
         vector<uint64_t>::iterator it0; //mcmr
         vector<uint64_t>::iterator it1; //mcmr
 
+        //find right offsets
+        int offset1 = query->find_offset(predicate->relation1);
+        int offset2 = query->find_offset(predicate->relation2);
+        // cout << "offset 1 : " << offset1 << endl;
+        // cout << "offset 2 : " << offset2 << endl;
+
         //temporal sets are needed to know the size of R' and S' TODO:free
         temp_set[0] = new unordered_set<uint64_t>();
         temp_set[1] = new unordered_set<uint64_t>();
@@ -58,7 +64,7 @@ int Joiner::create_and_compute_hist_array(){
         //iterate over result buffer and compute hist_array for both relations
         while( it != (*result_buffer)->end()) {
             //hist_array for relation1
-            it0 = it + predicate->relation1;
+            it0 = it + offset1;
             //if it already exists in set, don't do anything
             if(temp_set[0]->find(*it0) == temp_set[0]->end()){
                 temp_set[0]->insert(*it0);
@@ -67,7 +73,7 @@ int Joiner::create_and_compute_hist_array(){
             }
 
             //hist_array for relation2
-            it1 = it + predicate->relation2;
+            it1 = it + offset2;
             //if it already exists in set, don't do anything
             if(temp_set[1]->find(*it1) == temp_set[1]->end()){
                 temp_set[1]->insert(*it1);
@@ -134,34 +140,39 @@ int Joiner::create_and_compute_new_column(){
 
 
     if(join_type == 0){
-        cout << "sizes : "<< temp_set[0]->size() << endl;
-        cout << "sizes : "<< temp_set[1]->size() << endl;
         //create vectors
-        new2_column[0] = (NewColumnEntry2*)malloc(temp_set[0]->size() * sizeof(NewColumnEntry2));
-        new2_column[1] = (NewColumnEntry2*)malloc(temp_set[1]->size() * sizeof(NewColumnEntry2));
+        new2_column[0] = (NewColumnEntry2*)malloc(sizeof(NewColumnEntry2) * temp_set[0]->size());
+        new2_column[1] = (NewColumnEntry2*)malloc(sizeof(NewColumnEntry2) * temp_set[1]->size());
 
         //iterator for result_buffer
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
         vector<uint64_t>::iterator it0, it1;
         int hash_value;
 
+        //find right offsets
+        int offset1 = query->find_offset(predicate->relation1);
+        int offset2 = query->find_offset(predicate->relation2);
+
         //iterate over result buffer
         while(it != (*result_buffer)->end()){
-            it0 = it + predicate->relation1;
+            it0 = it + offset1;
             hash_value = h1(column[0][*it0]);
             //determine the index in the new column
             //if its first time adding this row_id to new2_column[0]
-            if(new2_column[0][copy_of_psum_array0[hash_value]].get_row_id() == -1){
-                cout << "mphkE!\n";
+            if(new2_column[0][copy_of_psum_array0[hash_value]].get_is_set() == 0){
+                cout << "000000000000000000000000000" << endl;
                 new2_column[0][copy_of_psum_array0[hash_value]].set(*it0 ,column[0][*it0]);
+                new2_column[0][copy_of_psum_array0[hash_value]].set_dirty();
                 copy_of_psum_array0[hash_value]++;
             }
 
-            it1 = it + predicate->relation2;
+            it1 = it + offset2;
             hash_value = h1(column[1][*it1]);
             //if its first time adding this row_id to new2_column[1]
-            if(new2_column[1][copy_of_psum_array1[hash_value]].get_row_id() == -1){
+            if(new2_column[1][copy_of_psum_array1[hash_value]].get_is_set()==0){
+                cout << "1111111111111111111111111" << endl;
                 new2_column[1][copy_of_psum_array1[hash_value]].set(*it1 ,column[1][*it1]);
+                new2_column[1][copy_of_psum_array1[hash_value]].set_dirty();
                 copy_of_psum_array1[hash_value]++;
             }
 
@@ -223,10 +234,11 @@ int Joiner::indexing(){
 
     //set variables accordingly to chosen join_index
     NewColumnEntry* column;
-    if(join_type == 2)
-        column = new_column[join_index];
-    else if(join_type == 0)
+    if(join_type == 0)
         column = new2_column[join_index];
+    else if(join_type == 2)
+        column = new_column[join_index];
+
     uint64_t* cur_hist_array = hist_array[join_index];
     uint64_t* cur_psum_array = psum_array[join_index];
 
@@ -274,14 +286,15 @@ int Joiner::join(){
         NewColumnEntry2* r1 = new2_column[join_index];
 
         cout << "will join type = 0....\n";
-        cout << temp_set[!join_index]->size() << endl;
         //for every row in r0
         for(int i = 0; i < temp_set[!join_index]->size(); i++){
             //for easier reading of code
             NewColumnEntry2 cur_row = r0[i];
 
             //take the bucket needed
+            cout << cur_row.get_value()<<"<<" << endl;
             int bucket_num = h1(cur_row.get_value());
+
 
             //search index for this record
             int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
@@ -315,7 +328,7 @@ int Joiner::join(){
             num_of_rows = query->get_relations()[predicate->relation1]->get_num_of_records();
         else if(join_index == 1)
             num_of_rows = query->get_relations()[predicate->relation2]->get_num_of_records();
-            
+
         for(uint64_t i = 0; i < num_of_rows; i++){
             //for easier reading of code
             NewColumnEntry cur_row = r0[i];
