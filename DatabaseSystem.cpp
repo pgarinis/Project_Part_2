@@ -64,7 +64,7 @@ int DatabaseSystem::execute_query(){
         if(predicates[i]->relation2 == -1){//FILTER
             filter(predicates[i]);
         }
-        if(predicates[i]->relation1 == predicates[i]->relation2){//SELF JOIN
+        else if(predicates[i]->relation1 == predicates[i]->relation2){//SELF JOIN
             self_join(predicates[i]);
         }
         else{//JOIN
@@ -128,7 +128,6 @@ int DatabaseSystem::filter(Predicate* predicate){
         delete result_buffer;
         result_buffer = new_result_buffer;
     }
-
 }
 
 int DatabaseSystem::self_join(Predicate* predicate){
@@ -177,20 +176,43 @@ int DatabaseSystem::join(Predicate* predicate){
     //both relations are processed already
     if((query->find_offset(predicate->relation1) != -1) &&
        (query->find_offset(predicate->relation2) != -1)){
-        //not original - not original
+        //both relations are already processed, so function is similar to self join
+        new_function(predicate);
+    }
+    //only one relation is processed already
+    if((query->find_offset(predicate->relation1) != -1) ||
+       (query->find_offset(predicate->relation2) != -1)){
         joiner->do_everything(query, predicate, 0);
-    }
-    //only relation1 is processed already
-    else if(query->find_offset(predicate->relation1) != -1){
-        //join_on()
-    }
-    //only relation2 is processed already
-    else if(query->find_offset(predicate->relation2) != -1){
-
     }
     //neiter of the 2 relations are processed, first predicate
     else if(result_buffer->size() == 0)
     {
         joiner->do_everything(query, predicate, 2);
     }
+}
+
+int DatabaseSystem::new_function(Predicate* predicate){
+    //get the columns the function will work with
+    uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
+    uint64_t* column2 = query->get_relations()[predicate->relation2]->get_column(predicate->column2);
+
+    //find right offsets
+    int offset1 = query->find_offset(predicate->relation1);
+    int offset2 = query->find_offset(predicate->relation2);
+
+    vector<uint64_t>* new_result_buffer = new vector<uint64_t>();
+    //search result_buffer
+    vector<uint64_t>::iterator it = result_buffer->begin();
+    while(it != result_buffer->end()) {
+        if(column1[*(it + offset1)] == column2[*(it + offset2)]){
+            //push_back whole tuple
+            for(int i = 0; i < query->get_tuple_size(); i++)
+                new_result_buffer->push_back(*(it+i));
+        }
+        it += query->get_tuple_size();
+    }
+    delete result_buffer;
+    result_buffer = new_result_buffer;
+
+    return 0;
 }

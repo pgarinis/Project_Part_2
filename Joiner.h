@@ -25,14 +25,13 @@ class Joiner{
 
     int join_type;
     //0 : oo
-    //1 : no
-    //2 : nn
+    //2 : no
 
     uint64_t* psum_array[2];
     uint64_t* hist_array[2];
     NewColumnEntry* new_column[2];
     uint64_t* column[2]; //pointers to original columns
-    unordered_set<uint64_t>* temp_set[2];
+    unordered_set<uint64_t>* temp_set;
     Index* index_array;
     int join_index;
 
@@ -59,9 +58,9 @@ class Joiner{
     }
 
     //hash function for segmentation
-    inline int h1(uint64_t num){return (num & (h1_num_of_buckets - 1));};
+    inline int h1(uint64_t num){return (num & (h1_num_of_buckets - 1));}
     //hash function for indexing
-    inline int h2(uint64_t num){return num % 16699;};
+    inline int h2(uint64_t num){return num % 16699;}
 
     int do_everything(Query* query, Predicate* predicate,int type);
 
