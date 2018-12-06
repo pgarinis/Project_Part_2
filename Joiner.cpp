@@ -208,7 +208,7 @@ int Joiner::indexing(){
     if(join_type == 0){
         uint64_t num_records = query->get_relations()[predicate->relation2]->get_num_of_records();
         join_index = num_records < temp_set->size();
-        join_index = 1;
+        //join_index = 1;
         cout << "Join index is : "<<join_index << endl;
 
         //set variables accordingly to chosen join_index
@@ -307,7 +307,7 @@ int Joiner::join(){
         //this array of sets saves a lot of calculations
         vector<uint64_t>* array_of_vectors[temp_set->size()];
         for(uint64_t i = 0; i < temp_set->size(); i++)
-            array_of_vectors[i] = new vector<uint64_t>;
+            array_of_vectors[i] = new vector<uint64_t>();
 
         //create a mapping
         unordered_map<uint64_t, vector<uint64_t>*> map;
@@ -346,7 +346,7 @@ int Joiner::join(){
 
             //do the mapping
             for(uint64_t i = 0; i < temp_set->size(); i++)
-                map[r0[i].get_row_id()] = array_of_vectors[i];
+                map[r1[i].get_row_id()] = array_of_vectors[i];
 
             //scanning UNINDEXED relation
             uint64_t limit = query->get_relations()[predicate->relation2]->get_num_of_records();
@@ -363,22 +363,26 @@ int Joiner::join(){
                 while(index != -1){
                     //cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
                     if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
-                        cout << index + psum_array[join_index][bucket_num] << endl;
+                        cout << index + psum_array[join_index][bucket_num] << "~"<< endl;
                         array_of_vectors[index + psum_array[join_index][bucket_num]]->push_back(cur_row.get_row_id());
-
                     }
-
 
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
+                cout <<" ~!@~!@#\n";
 
             }
-
+            int deleted = 0;
             for(uint64_t i = 0; i < temp_set->size();i++)
                 if(array_of_vectors[i]->size() == 0){
+                    deleted++;
                     delete array_of_vectors[i];
                     array_of_vectors[i] = NULL;
+                    map[r1[i].get_row_id()] = NULL;
                 }
+                else
+                    cout << array_of_vectors[i]->size()<<"sz\n";
+            cout << temp_set->size() <<" - "<<deleted<<endl;
         }
 
 
@@ -394,6 +398,7 @@ int Joiner::join(){
         //iterate over result buffer
         while(it != (*result_buffer)->end()){
             it0 = it + offset;
+            cout << "it0 " << *it0 << endl;
             vector<uint64_t>* v = map[*it0];
             if(v != NULL){
                 vector<uint64_t>::iterator vit = v->begin();
