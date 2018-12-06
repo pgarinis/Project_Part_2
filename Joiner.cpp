@@ -1,4 +1,5 @@
 #include "Joiner.h"
+#include <unordered_map>
 
 using namespace std;
 
@@ -207,6 +208,7 @@ int Joiner::indexing(){
     if(join_type == 0){
         uint64_t num_records = query->get_relations()[predicate->relation2]->get_num_of_records();
         join_index = num_records < temp_set->size();
+        join_index = 1;
         cout << "Join index is : "<<join_index << endl;
 
         //set variables accordingly to chosen join_index
@@ -304,7 +306,7 @@ int Joiner::join(){
 
         //for every row in r0
         int limit;
-        if(join_index == 1)
+        if(join_index == 0)
             limit = query->get_relations()[predicate->relation2]->get_num_of_records();
         else
             limit = temp_set->size();
@@ -313,6 +315,9 @@ int Joiner::join(){
         vector<uint64_t>* array_of_vectors[limit];
         for(uint64_t i = 0; i < limit; i++)
             array_of_vectors[i] = new vector<uint64_t>;
+
+        //create a mapping
+        unordered_map<uint64_t, vector<uint64_t>*> map;
 
         //in this loop array of vectors is calculated
         for(int i = 0; i < limit; i++){
@@ -345,6 +350,10 @@ int Joiner::join(){
                 delete array_of_vectors[i];
                 array_of_vectors[i] = NULL;
             }
+            else
+                map[cur_row.get_row_id()] = array_of_vectors[i];
+
+
         }
         //now iterate over result buffer
         //iterator for result_buffer
@@ -352,25 +361,27 @@ int Joiner::join(){
         vector<uint64_t>::iterator it0;
         int offset = query->find_offset(predicate->relation1);
 
+        cout << " all good \n";
+
 
         //iterate over result buffer
         while(it != (*result_buffer)->end()){
             it0 = it + offset;
-            vector<uint64_t>* v = array_of_vectors[r0[*it0].get_value()];
+            vector<uint64_t>* v = map[*it0];
             if(v != NULL){
                 vector<uint64_t>::iterator vit = v->begin();
                 while(vit != v->end()){
                     for(int i = 0;i < query->get_tuple_size(); i++)
                         new_vector->push_back(*(it+i));
                     new_vector->push_back(*vit);
+                    vit++;
                 }
             }
-        //
             it += query->get_tuple_size();
         }
-        //
-        // query->get_order()[query->get_order_index()] = predicate->relation2;
-        // query->incr_order_index();
+
+        query->get_order()[query->get_order_index()] = predicate->relation2;
+        query->incr_order_index();
     }
     else if(join_type == 2){
         //r0 --> NOT Indexed relation

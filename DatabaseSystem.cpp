@@ -71,6 +71,8 @@ int DatabaseSystem::execute_query(){
             join(predicates[i]);
         }
         print_result_buffer();
+        for(int i = 0; i < query->get_tuple_size(); i++)
+            cout << query->get_order()[i] << endl;
         cout << "Predicate DONE\n";
     }
 
