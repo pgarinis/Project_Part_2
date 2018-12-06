@@ -208,7 +208,7 @@ int Joiner::indexing(){
     if(join_type == 0){
         uint64_t num_records = query->get_relations()[predicate->relation2]->get_num_of_records();
         join_index = num_records < temp_set->size();
-         join_index = 1;
+        join_index = 1;
         cout << "Join index is : "<<join_index << endl;
 
         //set variables accordingly to chosen join_index
@@ -361,9 +361,14 @@ int Joiner::join(){
                 int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
 
                 while(index != -1){
-                    // cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
-                    if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
-                        array_of_vectors[index + psum_array[join_index][bucket_num]]->push_back(cur_row.get_value());
+                    //cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
+                    if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
+                        cout << index + psum_array[join_index][bucket_num] << endl;
+                        array_of_vectors[index + psum_array[join_index][bucket_num]]->push_back(cur_row.get_row_id());
+
+                    }
+
+
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
 
@@ -392,6 +397,8 @@ int Joiner::join(){
             vector<uint64_t>* v = map[*it0];
             if(v != NULL){
                 vector<uint64_t>::iterator vit = v->begin();
+                cout << v->size() << endl;
+                cout << "--------------------------\n";
                 while(vit != v->end()){
                     for(int i = 0;i < query->get_tuple_size(); i++)
                         new_vector->push_back(*(it+i));
