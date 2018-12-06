@@ -1,0 +1,16 @@
+1. Build Library Object from:
+
+https://github.com/google/googletest/tree/master/googletest
+
+in googletest dir:
+
+g++ -std=c++11 -isystem ./include -I . -pthread -c src/gtest-all.cc
+
+ar -rv libgtest.a gtest-all.o
+
+in our project/unit_tests dir:
+
+g++ -std=c++11 -isystem ./gtest -I . -pthread sample_test.cc libgtest.a
+
+libgtest.a is the compiled library
+gtest/ is gtest framework headers
