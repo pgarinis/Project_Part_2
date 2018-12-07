@@ -45,7 +45,7 @@ public:
     n : not original (take 'column' from temp results)
     */
     int join(Predicate* predicate);
-    int new_function(Predicate* predicate);
+    int pp_join(Predicate* predicate);
     int self_join(Predicate* predicate);
     int filter(Predicate* predicate);
         static inline int equal(uint64_t num1, uint64_t num2){ return num1 == num2;}
