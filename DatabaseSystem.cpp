@@ -78,18 +78,71 @@ int DatabaseSystem::execute_query(){
         //2) one of the two relations is already processed and the other isn't
         else
             joiner->handle_predicate(query, predicates[i]);
-        cout << "Predicate handled successfully\n";
+        cout << "SUCCESS\n";
+
+        //if there are not intermediate results, stop executing this query
+        if(result_buffer->size() == 0){
+            break;
+        }
     }
+
+    //print checksums
+    if(result_buffer->size() == 0){
+        for(int i = 0; i < query->get_num_of_projections(); i++){
+            cout << "NULL";
+            if(i != query->get_num_of_projections() - 1)
+                cout << " ";
+        }
+        cout << endl;
+    }
+    else{
+        Projection** projections = query->get_projections();
+        int num_of_projections = query->get_num_of_projections();
+
+        // print predicates to check if they are read correctly
+        // for(int i = 0; i < num_of_projections; i++)
+        //     cout << projections[i]->relation_index << "." << projections[i]->column_index<<endl;
+
+        //calculate tuple offsets for each projection
+        int offset_buffer[num_of_projections];
+        for(int i = 0; i < num_of_projections; i++)
+            offset_buffer[i] = query->find_offset(projections[i]->relation_index);
+
+        //calculate column pointers for each projection
+        uint64_t* proj_columns[num_of_projections];
+        for(int i = 0; i < num_of_projections; i++)
+            proj_columns[i] = relations[projections[i]->relation_index]->get_column(projections[i]->column_index);
+
+        //iterate over result buffer to calculate checksums
+        uint64_t* checksums = (uint64_t*)calloc(num_of_projections, sizeof(uint64_t));
+        vector<uint64_t>::iterator it = result_buffer->begin();
+        while(it != result_buffer->end()){
+            for(int i = 0; i < num_of_projections; i++)
+                checksums[i] += proj_columns[i][*(it+offset_buffer[i])];
+
+            it += query->get_tuple_size();
+        }
+
+        for(int i = 0; i < num_of_projections; i++){
+            cout << checksums[i];
+            if(i != (num_of_projections - 1))
+                cout << " ";
+        }
+        cout << endl;
+
+        free(checksums);
+    }
+
     // print_result_buffer();
-    for(int i = 0; i < query->get_tuple_size(); i++)
-        cout << query->get_order()[i] << endl;
+    // for(int i = 0; i < query->get_tuple_size(); i++)
+    //     cout << query->get_order()[i] << endl;
 
     delete result_buffer;
     delete query;
 }
 
 int DatabaseSystem::filter(Predicate* predicate){
-    cout << "Filter predicate is handled...\n";
+    cout << "Filter predicate is handled...";
     //get column the function will work with
     uint64_t* column = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
 
@@ -140,7 +193,7 @@ int DatabaseSystem::filter(Predicate* predicate){
 }
 
 int DatabaseSystem::self_join(Predicate* predicate){
-    cout << "Self join is handled...\n";
+    cout << "Self join is handled...";
     //get the columns the function will work with
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
@@ -184,7 +237,7 @@ int DatabaseSystem::self_join(Predicate* predicate){
 }
 
 int DatabaseSystem::pp_join(Predicate* predicate){
-    cout << "pp_join is handled...\n";
+    cout << "pp_join is handled...";
     //get the columns the function will work with
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation2]->get_column(predicate->column2);

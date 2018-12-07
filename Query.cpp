@@ -31,6 +31,9 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
     //read query from stdin
     cin.getline(query, BUFF_SIZE);
 
+    cout << "Query : " << query << endl;
+    cout << "--------------------------------------------------------------------\n";
+
     //0 2 4|0.1=1.2&1.0=2.1&0.1>3000|0.0 1.1
     first = strtok(query, "|");
     second = strtok(NULL, "|");

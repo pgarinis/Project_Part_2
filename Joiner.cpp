@@ -23,12 +23,11 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
     if((query->find_offset(predicate->relation1) != -1) ||
        (query->find_offset(predicate->relation2) != -1)){
            join_type = 0;
-           cout << "Join type 0 is handled...\n";
-       }
-
+           cout << "Join type 0 is handled...";
+    }
     //if neiter of the 2 relations are processed (if first predicate handled is join)
     else if((*result_buffer)->size() == 0){
-        cout << "Join type 2 is handled...\n";
+        cout << "Join type 2 is handled...";
         join_type = 2;
     }
 
@@ -64,7 +63,7 @@ int Joiner::segmentation(){
     create_and_compute_hist_array();
     create_and_compute_psum_array();
     create_and_compute_new_column();
-    cout << "Both relations segmentated successfully!" << endl;
+    //cout << "Both relations segmentated successfully!" << endl;
     return 0;
 }
 
@@ -278,7 +277,7 @@ int Joiner::indexing(){
         }
     }
 
-    cout << "Indexing completed successfully!" << endl;
+    //cout << "Indexing completed successfully!" << endl;
     return 0;
 }
 
