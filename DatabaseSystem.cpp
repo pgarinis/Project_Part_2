@@ -77,12 +77,12 @@ int DatabaseSystem::execute_query(){
         //1) both relations are unprocessed (if first predicate is join)
         //2) one of the two relations is already processed and the other isn't
         else
-            join(predicates[i]);
+            joiner->handle_predicate(query, predicates[i]);
         cout << "Predicate handled successfully\n";
     }
     // print_result_buffer();
-    // for(int i = 0; i < query->get_tuple_size(); i++)
-    //     cout << query->get_order()[i] << endl;
+    for(int i = 0; i < query->get_tuple_size(); i++)
+        cout << query->get_order()[i] << endl;
 
     delete result_buffer;
     delete query;
@@ -212,17 +212,4 @@ int DatabaseSystem::pp_join(Predicate* predicate){
     result_buffer = new_result_buffer;
 
     return 0;
-}
-
-int DatabaseSystem::join(Predicate* predicate){
-    //only one relation is processed already
-    if((query->find_offset(predicate->relation1) != -1) ||
-       (query->find_offset(predicate->relation2) != -1)){
-        joiner->do_everything(query, predicate, 0);
-    }
-    //neiter of the 2 relations are processed, first predicate
-    else if(result_buffer->size() == 0)
-    {
-        joiner->do_everything(query, predicate, 2);
-    }
 }

@@ -44,7 +44,6 @@ public:
     o : original
     n : not original (take 'column' from temp results)
     */
-    int join(Predicate* predicate);
     int pp_join(Predicate* predicate);
     int self_join(Predicate* predicate);
     int filter(Predicate* predicate);

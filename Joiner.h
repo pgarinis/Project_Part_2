@@ -12,7 +12,6 @@
 #include "Query.h"
 #include <vector>
 #include "Index.h"
-#include "NewColumnEntry2.h"
 #include "NewColumnEntry.h"
 
 using namespace std;
@@ -62,7 +61,7 @@ class Joiner{
     //hash function for indexing
     inline int h2(uint64_t num){return num % 16699;}
 
-    int do_everything(Query* query, Predicate* predicate,int type);
+    int handle_predicate(Query* query, Predicate* predicate);
 
     /*
     rearranges every column's records in order to create a new column where records

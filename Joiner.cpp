@@ -13,35 +13,50 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
     h2_num_of_bits = (int)log2(h2_num_of_buckets);
 }
 
-int Joiner::do_everything(Query* query, Predicate* predicate,int type){
+int Joiner::handle_predicate(Query* query, Predicate* predicate){
+    //set joiner's variables
     this->query = query;
     this->predicate = predicate;
-    this->join_type = type;
 
+    //set join_type accordingly
+    //only one relation is processed already
+    if((query->find_offset(predicate->relation1) != -1) ||
+       (query->find_offset(predicate->relation2) != -1)){
+           join_type = 0;
+           cout << "Join type 0 is handled...\n";
+       }
+
+    //neiter of the 2 relations are processed, first predicate
+    else if((*result_buffer)->size() == 0)
+        cout << "Join type 1 is handled...\n";
+        join_type = 2;
+
+    //put processed relation at first place and unprocessed at second place
     if(join_type == 0){
-        //place processed relation at first place and unprocessed at second place
         if(query->find_offset(predicate->relation1) == -1){
             int temp;
-            //switch
+            //switch relations
             temp = predicate->relation1;
             predicate->relation1 = predicate->relation2;
             predicate->relation2 = temp;
-
+            //switch columns
             temp = predicate->column1;
             predicate->column1 = predicate->column2;
             predicate->column2 = temp;
         }
     }
 
+    //get the columns the join functions will work with
     column[0] = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     column[1] = query->get_relations()[predicate->relation2]->get_column(predicate->column2);
 
-
+    //precedures to complete a join predicate
     segmentation();
     indexing();
     join();
 
     //TODO: clean everything
+
 }
 
 int Joiner::segmentation(){
@@ -72,7 +87,7 @@ int Joiner::create_and_compute_hist_array(){
         //temporal set is needed to know the size of the relation that already exists in results TODO:free
         temp_set = new unordered_set<uint64_t>();
 
-        //iterate over result buffer and compute hist_array for relation1
+        //search whole result buffer and compute hist_array for relation1
         while( it != (*result_buffer)->end()) {
             it0 = it + offset;
             //if it already exists in set, don't do anything
@@ -93,8 +108,8 @@ int Joiner::create_and_compute_hist_array(){
             hist_array[1][hash_value]++;
         }
 
-        cout << "Unprocessed : "<<temp_set->size() << endl;
-        cout << "Processed : "<<query->get_relations()[predicate->relation2]->get_num_of_records() << endl;
+        // cout << "Unprocessed : "<<temp_set->size() << endl;
+        // cout << "Processed : "<<query->get_relations()[predicate->relation2]->get_num_of_records() << endl;
     }
     else if(join_type == 2){
         //to make code more readable
@@ -129,6 +144,7 @@ int Joiner::create_and_compute_psum_array(){
         psum_array[0][j] = psum_array[0][j-1] + hist_array[0][j-1];
         psum_array[1][j] = psum_array[1][j-1] + hist_array[1][j-1];
     }
+
     return 0;
 }
 
@@ -136,21 +152,21 @@ int Joiner::create_and_compute_new_column(){
     //to make code more readable
     int hash_value;
 
-    //temporal array needed to calculate new_column. this array is copy of psum array initially
-    uint64_t copy_of_psum_array0[h1_num_of_buckets];
-    for(int j = 0; j < h1_num_of_buckets; j++)
-        copy_of_psum_array0[j] = psum_array[0][j];
-
-    uint64_t copy_of_psum_array1[h1_num_of_buckets];
-    for(int j = 0; j < h1_num_of_buckets; j++)
-        copy_of_psum_array1[j] = psum_array[1][j];
-
+    //temporal arrays needed to calculate new_column
+    //these arrays are the copys of their respective psum_array
+    uint64_t copy_of_psum_array[2][h1_num_of_buckets];
+    for(int j = 0; j < h1_num_of_buckets; j++){
+        copy_of_psum_array[0][j] = psum_array[0][j];
+        copy_of_psum_array[1][j] = psum_array[1][j];
+    }
 
     if(join_type == 0){
-        //create vectors
+        //create NewColumnEntry arrays to store new columns for each relation
+        //column for processed relation
         new_column[0] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * temp_set->size());
-        uint64_t num_records = query->get_relations()[predicate->relation2]->get_num_of_records();
-        new_column[1] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * num_records);
+        //column for unprocessed relation
+        uint64_t num_of_records = query->get_relations()[predicate->relation2]->get_num_of_records();
+        new_column[1] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * num_of_records);
 
         //iterator for result_buffer
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
@@ -159,9 +175,10 @@ int Joiner::create_and_compute_new_column(){
         //clear temporal set to use it again for the same reason as before
         temp_set->clear();
 
-        //find right offsets
+        //find relation1's offset in tuple
         int offset1 = query->find_offset(predicate->relation1);
 
+        //TODO: can iterate over temp_set instead of new buffer. it should be faster
         //iterate over result buffer for relation1
         while(it != (*result_buffer)->end()){
             it0 = it + offset1;
@@ -169,17 +186,18 @@ int Joiner::create_and_compute_new_column(){
             //if its first time adding this row_id to new_column[0]
             if(temp_set->find(*it0) == temp_set->end()){
                 temp_set->insert(*it0);
-                new_column[0][copy_of_psum_array0[hash_value]].set(*it0 ,column[0][*it0]);
-                copy_of_psum_array0[hash_value]++;
+                new_column[0][copy_of_psum_array[0][hash_value]].set(*it0 ,column[0][*it0]);
+                copy_of_psum_array[0][hash_value]++;
             }
 
             it += query->get_tuple_size();
         }
 
-        for(int j = 0; j < num_records; j++){
+        //iterate over relation2's original column
+        for(int j = 0; j < num_of_records; j++){
             hash_value = h1(column[1][j]);
-            new_column[1][copy_of_psum_array1[hash_value]].set(j, column[1][j]);
-            copy_of_psum_array1[hash_value]++;
+            new_column[1][copy_of_psum_array[1][hash_value]].set(j, column[1][j]);
+            copy_of_psum_array[1][hash_value]++;
         }
     }
     else if(join_type == 2){
@@ -191,14 +209,14 @@ int Joiner::create_and_compute_new_column(){
         //calculate new_column. new column is an array of tuples (uint64_t index, uint64_t value)
         for(int j = 0; j < num_records1; j++){
             hash_value = h1(column[0][j]);
-            new_column[0][copy_of_psum_array0[hash_value]].set(j, column[0][j]);
-            copy_of_psum_array0[hash_value]++;
+            new_column[0][copy_of_psum_array[0][hash_value]].set(j, column[0][j]);
+            copy_of_psum_array[0][hash_value]++;
         }
 
         for(int j = 0; j < num_records2; j++){
             hash_value = h1(column[1][j]);
-            new_column[1][copy_of_psum_array1[hash_value]].set(j, column[1][j]);
-            copy_of_psum_array1[hash_value]++;
+            new_column[1][copy_of_psum_array[1][hash_value]].set(j, column[1][j]);
+            copy_of_psum_array[1][hash_value]++;
         }
     }
     return 0;
@@ -206,10 +224,10 @@ int Joiner::create_and_compute_new_column(){
 
 int Joiner::indexing(){
     if(join_type == 0){
-        uint64_t num_records = query->get_relations()[predicate->relation2]->get_num_of_records();
-        join_index = num_records < temp_set->size();
-        //join_index = 1;
-        cout << "Join index is : "<<join_index << endl;
+        //index the smallest new column (for effieciency reasons)
+        uint64_t num_of_records = query->get_relations()[predicate->relation2]->get_num_of_records();
+        join_index = num_of_records < temp_set->size();
+        // cout << "Join index is : "<<join_index << endl;
 
         //set variables accordingly to chosen join_index
         NewColumnEntry* column = new_column[join_index];
@@ -299,26 +317,26 @@ int Joiner::create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_a
 int Joiner::join(){
     vector<uint64_t>* new_vector = new vector<uint64_t>();
     if(join_type == 0){
-        //r0 --> NOT Indexed relation
-        NewColumnEntry* r0 = new_column[!join_index];
-        //r1 --> Indexed relation
-        NewColumnEntry* r1 = new_column[join_index];
+        NewColumnEntry* unindexed_relation = new_column[!join_index];
+        //indexed_relation --> Indexed relation
+        NewColumnEntry* indexed_relation = new_column[join_index];
 
-        //this array of sets saves a lot of calculations
+        //using this array of vectors to prevent multiple same calculations
+        //every needed calculation wll be done only 1 time
         vector<uint64_t>* array_of_vectors[temp_set->size()];
         for(uint64_t i = 0; i < temp_set->size(); i++)
             array_of_vectors[i] = new vector<uint64_t>();
 
-        //create a mapping
+        //create a mapping (from row_id to its respective vector from array_of_vectors)
         unordered_map<uint64_t, vector<uint64_t>*> map;
 
+        //if unprocessed relation is indexed
         if(join_index == 1){
-            uint64_t limit = temp_set->size();
             //in this loop array of vectors is calculated
             //scan already processed column
-            for(int i = 0; i < limit; i++){
+            for(int i = 0; i < temp_set->size(); i++){
                 //for easier reading of code
-                NewColumnEntry cur_row = r0[i];
+                NewColumnEntry cur_row = unindexed_relation[i];
 
                 //take the bucket needed
                 int bucket_num = h1(cur_row.get_value());
@@ -326,10 +344,10 @@ int Joiner::join(){
                 //search index for this record
                 int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
 
+                //traverse chain array and push qualified tuples to respective vector
                 while(index != -1){
-                    // cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
-                    if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
-                        array_of_vectors[i]->push_back(r1[index + psum_array[join_index][bucket_num]].get_row_id());
+                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
+                        array_of_vectors[i]->push_back(indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id());
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
 
@@ -337,22 +355,22 @@ int Joiner::join(){
                 if(array_of_vectors[i]->size() == 0){
                     delete array_of_vectors[i];
                     array_of_vectors[i] = NULL;
+                    map[cur_row.get_row_id()] = NULL;
                 }
-                else
+                else//create respective mapping
                     map[cur_row.get_row_id()] = array_of_vectors[i];
             }
         }
         else if (join_index == 0){
-
             //do the mapping
             for(uint64_t i = 0; i < temp_set->size(); i++)
-                map[r1[i].get_row_id()] = array_of_vectors[i];
+                map[indexed_relation[i].get_row_id()] = array_of_vectors[i];
 
             //scanning UNINDEXED relation
             uint64_t limit = query->get_relations()[predicate->relation2]->get_num_of_records();
             for(int i = 0; i < limit; i++){
                 //for easier reading of code
-                NewColumnEntry cur_row = r0[i];
+                NewColumnEntry cur_row = unindexed_relation[i];
 
                 //take the bucket needed
                 int bucket_num = h1(cur_row.get_value());
@@ -361,16 +379,10 @@ int Joiner::join(){
                 int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
 
                 while(index != -1){
-                    //cout << r1[index + psum_array[join_index][bucket_num]].get_value() << " vs "  << cur_row.get_value() << endl;
-                    if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
-                        cout << index + psum_array[join_index][bucket_num] << "~"<< endl;
+                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
                         array_of_vectors[index + psum_array[join_index][bucket_num]]->push_back(cur_row.get_row_id());
-                    }
-
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
-                cout <<" ~!@~!@#\n";
-
             }
             int deleted = 0;
             for(uint64_t i = 0; i < temp_set->size();i++)
@@ -378,10 +390,8 @@ int Joiner::join(){
                     deleted++;
                     delete array_of_vectors[i];
                     array_of_vectors[i] = NULL;
-                    map[r1[i].get_row_id()] = NULL;
+                    map[indexed_relation[i].get_row_id()] = NULL;
                 }
-                else
-                    cout << array_of_vectors[i]->size()<<"sz\n";
             cout << temp_set->size() <<" - "<<deleted<<endl;
         }
 
@@ -392,18 +402,15 @@ int Joiner::join(){
         vector<uint64_t>::iterator it0;
         int offset = query->find_offset(predicate->relation1);
 
-        cout << " all good \n";
-
-
         //iterate over result buffer
         while(it != (*result_buffer)->end()){
             it0 = it + offset;
-            cout << "it0 " << *it0 << endl;
+            // cout << "it0 " << *it0 << endl;
             vector<uint64_t>* v = map[*it0];
             if(v != NULL){
                 vector<uint64_t>::iterator vit = v->begin();
-                cout << v->size() << endl;
-                cout << "--------------------------\n";
+                // cout << v->size() << endl;
+                // cout << "--------------------------\n";
                 while(vit != v->end()){
                     for(int i = 0;i < query->get_tuple_size(); i++)
                         new_vector->push_back(*(it+i));
@@ -418,12 +425,12 @@ int Joiner::join(){
         query->incr_order_index();
     }
     else if(join_type == 2){
-        //r0 --> NOT Indexed relation
-        NewColumnEntry* r0 = new_column[!join_index];
-        //r1 --> Indexed relation
-        NewColumnEntry* r1 = new_column[join_index];
+        //unindexed_relation --> NOT Indexed relation
+        NewColumnEntry* unindexed_relation = new_column[!join_index];
+        //indexed_relation --> Indexed relation
+        NewColumnEntry* indexed_relation = new_column[join_index];
 
-        //for every row in r0
+        //for every row in unindexed_relation
         uint64_t num_of_rows;
         if(join_index == 0)
             num_of_rows = query->get_relations()[predicate->relation1]->get_num_of_records();
@@ -432,7 +439,7 @@ int Joiner::join(){
 
         for(uint64_t i = 0; i < num_of_rows; i++){
             //for easier reading of code
-            NewColumnEntry cur_row = r0[i];
+            NewColumnEntry cur_row = unindexed_relation[i];
 
             //take the bucket needed
             int bucket_num = h1(cur_row.get_value());
@@ -442,12 +449,12 @@ int Joiner::join(){
 
             //cout << "Value : " << cur_row.get_value() << endl;
             while(index != -1){
-                //cout << r1.new_column[index].value << " vs "  << cur_row.value << endl;
-                if(r1[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
-                    //tuple [cur_row.get_index() + 1, r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1]
-                    //cout <<"[" << cur_row.get_index() + 1 << " : "<<r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
+                //cout << indexed_relation.new_column[index].value << " vs "  << cur_row.value << endl;
+                if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
+                    //tuple [cur_row.get_index() + 1, indexed_relation->get_new_column()[index + indexed_relation->get_psum_array()[bucket_num]].get_index() + 1]
+                    //cout <<"[" << cur_row.get_index() + 1 << " : "<<indexed_relation->get_new_column()[index + indexed_relation->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
                     uint64_t row1 = cur_row.get_row_id();
-                    uint64_t row2 = r1[index + psum_array[join_index][bucket_num]].get_row_id();
+                    uint64_t row2 = indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id();
                     //insert to results with correct order
                     //FIRST push unindexed row id, THEN indexed row id
                     new_vector->push_back(row1);
@@ -463,51 +470,6 @@ int Joiner::join(){
     *result_buffer = new_vector;
 }
 
-// int Joiner::join(){
-//     //r0 --> NOT Indexed relation
-//     Relation* r0 = NULL;
-//     //r1 --> Indexed relation
-//     Relation* r1 = NULL;
-//
-//     if(relations[0]->get_index_array() != NULL){
-//         r1 = relations[0];
-//         r0 = relations[1];
-//     }
-//     else{
-//         r1 = relations[1];
-//         r0 = relations[0];
-//     }
-//
-//
-//     int counter = 0;
-//     //for every row in r0
-//     for(int i = 0; i < r0->get_num_of_records(); i++){
-//         //for easier reading of code
-//         NewColumnEntry cur_row = r0->get_new_column()[i];
-//
-//         //take the bucket needed
-//         int bucket_num = h1(cur_row.get_value());
-//
-//         //search index for this record
-//         int index = r1->get_index_array()[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
-//
-//         //cout << "Value : " << cur_row.get_value() << endl;
-//         while(index != -1){
-//             //cout << r1.new_column[index].value << " vs "  << cur_row.value << endl;
-//             if(r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_value() == cur_row.get_value()){
-//                 //tuple [cur_row.get_index() + 1, r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1]
-//                 //cout <<"[" << cur_row.get_index() + 1 << " : "<<r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1 <<"]"<< endl;
-//                 uint64_t row1 = cur_row.get_index() + 1;
-//                 uint64_t row2 = r1->get_new_column()[index + r1->get_psum_array()[bucket_num]].get_index() + 1;
-//                 //printf("%lu == %lu\n",row1,row2);
-//                 this->result->InsertData(row1, row2);
-//             }
-//             index = r1->get_index_array()[bucket_num].get_chain_array()[index];
-//         }
-//         //cout << " -----------------------------" << endl;
-//     }
-//     return 0;
-// }
 
 Joiner::~Joiner(){
 
