@@ -111,15 +111,24 @@ int DatabaseSystem::execute_query(){
         //calculate column pointers for each projection
         uint64_t* proj_columns[num_of_projections];
         for(int i = 0; i < num_of_projections; i++)
-            proj_columns[i] = relations[projections[i]->relation_index]->get_column(projections[i]->column_index);
+            proj_columns[i] = query->get_relations()[projections[i]->relation_index]->get_column(projections[i]->column_index);
+
+        //make sets for each projection so no duplicates are calculated
+        set<uint64_t>* calculated[num_of_projections];
+        for(int i = 0; i < num_of_projections; i++)
+            calculated[i] = new set<uint64_t>;
 
         //iterate over result buffer to calculate checksums
         uint64_t* checksums = (uint64_t*)calloc(num_of_projections, sizeof(uint64_t));
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()){
-            for(int i = 0; i < num_of_projections; i++)
+            for(int i = 0; i < num_of_projections; i++){
+                // if(calculated[i]->find(*(it+offset_buffer[i])) == calculated[i]->end()){
+                //     calculated[i]->insert(*(it+offset_buffer[i]));
+                //     checksums[i] += proj_columns[i][*(it+offset_buffer[i])];
+                // }
                 checksums[i] += proj_columns[i][*(it+offset_buffer[i])];
-
+            }
             it += query->get_tuple_size();
         }
 
