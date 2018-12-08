@@ -11,6 +11,7 @@ DatabaseSystem::DatabaseSystem():
 num_of_relations(0), relations(NULL),
 result_buffer(new vector<uint64_t>()), joiner(new Joiner(&result_buffer))
 {
+    
 }
 
 DatabaseSystem::~DatabaseSystem(){
@@ -138,7 +139,8 @@ int DatabaseSystem::execute_query(){
                 cout << " ";
         }
         cout << endl;
-
+        for(int i = 0; i < num_of_projections; i++)
+            delete calculated[i];
         free(checksums);
     }
 

@@ -15,7 +15,11 @@ projections(NULL), num_of_projections(0)
 
 Query::~Query(){
     free(relations);
+    for(int i = 0; i < num_of_predicates; i++)
+        free(predicates[i]);
     free(predicates);
+    for(int i = 0; i < num_of_predicates; i++)
+        free(projections[i]);
     free(projections);
     free(order);
 }

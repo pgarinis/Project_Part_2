@@ -11,6 +11,11 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
     h1_num_of_bits = (int)log2(h1_num_of_buckets);
     h2_num_of_buckets = 16699;
     h2_num_of_bits = (int)log2(h2_num_of_buckets);
+
+}
+
+Joiner::~Joiner(){
+
 }
 
 int Joiner::handle_predicate(Query* query, Predicate* predicate){
@@ -55,8 +60,21 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
     indexing();
     join();
 
-    //TODO: clean everything
+    if(new_column[0] != NULL)
+        free(new_column[0]);
+    if(new_column[1] != NULL)
+        free(new_column[1]);
+    delete[] index_array;
+    if(hist_array[0] != NULL)
+        free(hist_array[0]);
+    if(hist_array[1] != NULL)
+        free(hist_array[1]);
+    if(psum_array[0] != NULL)
+        free(psum_array[0]);
+    if(psum_array[1] != NULL)
+        free(psum_array[1]);
 
+    delete temp_set;
 }
 
 int Joiner::segmentation(){
@@ -297,6 +315,7 @@ int Joiner::create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_a
 
 int Joiner::join(){
     vector<uint64_t>* new_vector = new vector<uint64_t>();
+    //int temp_set_init_size = temp_set->size();
     if(join_type == 0){
         NewColumnEntry* unindexed_relation = new_column[!join_index];
         //indexed_relation --> Indexed relation
@@ -398,6 +417,10 @@ int Joiner::join(){
             it += query->get_tuple_size();
         }
 
+        for(uint64_t i = 0; i < temp_set->size(); i++)
+            if(array_of_vectors[i] != NULL)
+                delete array_of_vectors[i];
+
         //set order array since new tuple got bigger
         query->get_order()[query->get_order_index()] = predicate->relation2;
         query->incr_order_index();
@@ -446,9 +469,4 @@ int Joiner::join(){
     *result_buffer = new_vector;
 
     return 0;
-}
-
-
-Joiner::~Joiner(){
-
 }
