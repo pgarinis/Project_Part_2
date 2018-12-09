@@ -39,6 +39,7 @@ public:
     */
     int execute_query();
 
+    int handle_load();
     /*
     3 categories of predicates
     o : original

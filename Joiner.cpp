@@ -11,11 +11,15 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
     h1_num_of_bits = (int)log2(h1_num_of_buckets);
     h2_num_of_buckets = 16699;
     h2_num_of_bits = (int)log2(h2_num_of_buckets);
+    new_column[0] = NULL;
+    new_column[1] = NULL;
+    index_array = NULL;
+    temp_set = NULL;
 
 }
 
 Joiner::~Joiner(){
-
+    delete temp_set;   
 }
 
 int Joiner::handle_predicate(Query* query, Predicate* predicate){
@@ -64,7 +68,8 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
         free(new_column[0]);
     if(new_column[1] != NULL)
         free(new_column[1]);
-    delete[] index_array;
+    if(index_array != NULL)
+        delete[] index_array;
     if(hist_array[0] != NULL)
         free(hist_array[0]);
     if(hist_array[1] != NULL)
@@ -73,8 +78,8 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
         free(psum_array[0]);
     if(psum_array[1] != NULL)
         free(psum_array[1]);
-
-    delete temp_set;
+    // if(temp_set != NULL)
+    //     delete temp_set;
 }
 
 int Joiner::segmentation(){

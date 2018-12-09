@@ -9,19 +9,23 @@
 Query::Query():
 relations(NULL), num_of_relations(0),
 predicates(NULL), num_of_predicates(0),
-projections(NULL), num_of_projections(0)
+projections(NULL), num_of_projections(0), order(NULL)
 {
 }
 
 Query::~Query(){
-    free(relations);
+    if(relations != NULL)
+        free(relations);
     for(int i = 0; i < num_of_predicates; i++)
         free(predicates[i]);
-    free(predicates);
+    if(predicates != NULL)
+        free(predicates);
     for(int i = 0; i < num_of_projections; i++)
         free(projections[i]);
-    free(projections);
-    free(order);
+    if(projections != NULL)
+        free(projections);
+    if(order != NULL)
+        free(order);
 }
 
 int Query::read_query(Relation** db_relations, int db_num_of_relations){
@@ -34,6 +38,8 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
 
     //read query from stdin
     cin.getline(query, BUFF_SIZE);
+    if(!strcmp(query,"F"))
+        return 1;
 
     cout << "Query : " << query << endl;
     cout << "--------------------------------------------------------------------\n";
@@ -142,6 +148,8 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
         projections[num_of_projections - 1]->column_index = atoi(strtok(NULL, " ."));
         token = strtok(NULL, " .\n");
     }
+
+    return 0;
 
     //cout << "there are "<< num_of_relations << " relations in this query."<<endl;
     //cout << "there are "<< num_of_predicates << " predicates in this query" <<endl;

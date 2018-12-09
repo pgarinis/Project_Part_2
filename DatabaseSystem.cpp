@@ -9,7 +9,7 @@
 #define BUFF_SIZE 256
 
 DatabaseSystem::DatabaseSystem():
-num_of_relations(0), relations(NULL),
+num_of_relations(0), relations(NULL), query(NULL),
 result_buffer(new vector<uint64_t>()), joiner(new Joiner(&result_buffer))
 {
 
@@ -20,6 +20,7 @@ DatabaseSystem::~DatabaseSystem(){
         delete relations[i];
     free(relations);
     delete joiner;
+    delete result_buffer;
 }
 
 void DatabaseSystem::print_result_buffer(){
@@ -51,10 +52,21 @@ int DatabaseSystem::load_relations(){
     return 0;
 }
 
+int DatabaseSystem::handle_load(){
+    while(!construct_query()){
+        result_buffer->clear();
+        execute_query();
+        delete query;
+    }
+    delete query;
+    cout << "Load Handled" << endl;
+    return 0;
+}
+
 int DatabaseSystem::construct_query(){
     this->query = new Query();
-    this->query->read_query(relations, num_of_relations);
-    //TODO : delete query after it has been executed
+    int code = this->query->read_query(relations, num_of_relations);
+    return code;
 }
 
 int DatabaseSystem::execute_query(){
@@ -181,9 +193,6 @@ int DatabaseSystem::execute_query(){
     // print_result_buffer();
     // for(int i = 0; i < query->get_tuple_size(); i++)
     //     cout << query->get_order()[i] << endl;
-
-    delete result_buffer;
-    delete query;
 }
 
 int DatabaseSystem::filter(Predicate* predicate){
