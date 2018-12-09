@@ -5,13 +5,14 @@
 #include <cstdlib>
 #include <cstring>
 #include "Relation.h"
+#include <bits/stdc++.h> //unordered_set
 #define BUFF_SIZE 256
 
 DatabaseSystem::DatabaseSystem():
 num_of_relations(0), relations(NULL),
 result_buffer(new vector<uint64_t>()), joiner(new Joiner(&result_buffer))
 {
-    
+
 }
 
 DatabaseSystem::~DatabaseSystem(){
@@ -60,6 +61,34 @@ int DatabaseSystem::execute_query(){
     //get predicates from query in order to iterate over them
     Predicate** predicates = query->get_predicates();
 
+    unordered_set<int> relations_set;
+
+    relations_set.insert(predicates[0]->relation1);
+    relations_set.insert(predicates[0]->relation2);
+
+    for(int i = 1; i < query->get_num_of_predicates(); i++){
+        if(relations_set.find(predicates[i]->relation1) == relations_set.end() &&
+          relations_set.find(predicates[i]->relation2) == relations_set.end())
+          {
+              cout << "Predicate not chained with the previous" << endl;
+              for(int j = 1; j < query->get_num_of_predicates(); j++){
+                  if(relations_set.find(predicates[j]->relation1) != relations_set.end() ||
+                    relations_set.find(predicates[j]->relation2) != relations_set.end())
+                    {
+                        cout << "Found predicate to chain with index : " << j << endl;
+                        Predicate* temp_pred = predicates[i];
+                        predicates[i] = predicates[j];
+                        predicates[j] = temp_pred;
+
+                        relations_set.insert(predicates[j]->relation1);
+                        relations_set.insert(predicates[j]->relation2);
+                        break;
+                    }
+              }
+          }
+    }
+
+
     //execute every predicate
     for(int i = 0; i < query->get_num_of_predicates(); i++){
         //filter predicate
@@ -71,14 +100,19 @@ int DatabaseSystem::execute_query(){
         //special case of join, where both relations are already processed
         //this function in similar to self join and Index is not needed
         else if((query->find_offset(predicates[i]->relation1) != -1) &&
-                (query->find_offset(predicates[i]->relation2) != -1))
-            pp_join(predicates[i]);
+                (query->find_offset(predicates[i]->relation2) != -1)){
+                    cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
+                    pp_join(predicates[i]);
+                }
         //join predicate
         //2 cases :
         //1) both relations are unprocessed (if first predicate is join)
         //2) one of the two relations is already processed and the other isn't
-        else
+        else{
+            cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
             joiner->handle_predicate(query, predicates[i]);
+        }
+
         cout << "SUCCESS\n";
 
         //if there are not intermediate results, stop executing this query
@@ -86,7 +120,7 @@ int DatabaseSystem::execute_query(){
             break;
         }
     }
-
+    cout << "===================" << endl;
     //print checksums
     if(result_buffer->size() == 0){
         for(int i = 0; i < query->get_num_of_projections(); i++){
