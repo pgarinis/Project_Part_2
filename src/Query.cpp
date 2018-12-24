@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "../include/Query.h"
-#define BUFF_SIZE 256
+#define BUFF_SIZE 1024
 
 Query::Query():
 relations(NULL), num_of_relations(0),
@@ -37,12 +37,20 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
     char* token;
 
     //read query from stdin
-    cin.getline(query, BUFF_SIZE);
-    if(!strcmp(query,"F"))
-        return 1;
+    if(cin.fail())
+        cout << "cin Error" << endl;
 
-    cout << "Query : " << query << endl;
-    cout << "--------------------------------------------------------------------\n";
+    cin.getline(query, BUFF_SIZE);
+    //cout << "Query : " << query << endl;
+    //cout << "--------------------------------------------------------------------" << endl;
+
+    if(cin.eof())
+        return 2;
+
+    if(!strcmp(query,"F")){
+        //cout << "F read" << endl;
+        return 1;
+    }
 
     //0 2 4|0.1=1.2&1.0=2.1&0.1>3000|0.0 1.1
     first = strtok(query, "|");

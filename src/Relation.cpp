@@ -21,7 +21,7 @@ Relation::Relation(char* file_name){
 
     //close relation's binary file
     infile.close();
-    cout << "Relation " << file_name << " (" << num_of_records <<  ") loaded successfully." << endl;
+    //cout << "Relation " << file_name << " (" << num_of_records <<  ") loaded successfully." << endl;
 };
 
 Relation::~Relation(){

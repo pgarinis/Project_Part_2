@@ -32,11 +32,11 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
     if((query->find_offset(predicate->relation1) != -1) ||
        (query->find_offset(predicate->relation2) != -1)){
            join_type = 0;
-           cout << "Join type 0 is handled...";
+           //cout << "Join type 0 is handled...";
     }
     //if neiter of the 2 relations are processed (if first predicate handled is join)
     else if((*result_buffer)->size() == 0){
-        cout << "Join type 2 is handled...";
+        //cout << "Join type 2 is handled...";
         join_type = 2;
     }
 

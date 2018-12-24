@@ -7,6 +7,8 @@
 #include "../include/DatabaseSystem.h"
 #include <bits/stdc++.h> //unordered_set
 #define BUFF_SIZE 256
+#define STOP_COMMAND 2
+#define WAIT_COMMAND 1
 
 DatabaseSystem::DatabaseSystem():
 num_of_relations(0), relations(NULL), query(NULL),
@@ -25,12 +27,12 @@ DatabaseSystem::~DatabaseSystem(){
 
 void DatabaseSystem::print_result_buffer(){
     if(result_buffer == NULL || result_buffer->size() == 0){
-        cout << "NULL" << endl;
+        //cout << "NULL" << endl;
         return;
     }
     vector<uint64_t>::iterator it = result_buffer->begin();
     while( it != result_buffer->end()) {
-        cout << *it + 1 << endl;
+        //cout << *it + 1 << endl;
         it+=1;
     }
 }
@@ -53,13 +55,20 @@ int DatabaseSystem::load_relations(){
 }
 
 int DatabaseSystem::handle_load(){
-    while(!construct_query()){
-        result_buffer->clear();
-        execute_query();
+    int code;
+    while( (code = construct_query()) != STOP_COMMAND){
+        if(code != WAIT_COMMAND){
+            result_buffer->clear();
+            execute_query();
+
+        }
+        // else{
+        //     cout << "Load Handled" << endl;
+        // }
         delete query;
     }
     delete query;
-    cout << "Load Handled" << endl;
+
     return 0;
 }
 
@@ -73,32 +82,32 @@ int DatabaseSystem::execute_query(){
     //get predicates from query in order to iterate over them
     Predicate** predicates = query->get_predicates();
 
-    unordered_set<int> relations_set;
-
-    relations_set.insert(predicates[0]->relation1);
-    relations_set.insert(predicates[0]->relation2);
-
-    for(int i = 1; i < query->get_num_of_predicates(); i++){
-        if(relations_set.find(predicates[i]->relation1) == relations_set.end() &&
-          relations_set.find(predicates[i]->relation2) == relations_set.end())
-          {
-              cout << "Predicate not chained with the previous" << endl;
-              for(int j = 1; j < query->get_num_of_predicates(); j++){
-                  if(relations_set.find(predicates[j]->relation1) != relations_set.end() ||
-                    relations_set.find(predicates[j]->relation2) != relations_set.end())
-                    {
-                        cout << "Found predicate to chain with index : " << j << endl;
-                        Predicate* temp_pred = predicates[i];
-                        predicates[i] = predicates[j];
-                        predicates[j] = temp_pred;
-
-                        relations_set.insert(predicates[j]->relation1);
-                        relations_set.insert(predicates[j]->relation2);
-                        break;
-                    }
-              }
-          }
-    }
+    // unordered_set<int> relations_set;
+    //
+    // relations_set.insert(predicates[0]->relation1);
+    // relations_set.insert(predicates[0]->relation2);
+    //
+    // for(int i = 1; i < query->get_num_of_predicates(); i++){
+    //     if(relations_set.find(predicates[i]->relation1) == relations_set.end() &&
+    //       relations_set.find(predicates[i]->relation2) == relations_set.end())
+    //       {
+    //           //cout << "Predicate not chained with the previous" << endl;
+    //           for(int j = 1; j < query->get_num_of_predicates(); j++){
+    //               if(relations_set.find(predicates[j]->relation1) != relations_set.end() ||
+    //                 relations_set.find(predicates[j]->relation2) != relations_set.end())
+    //                 {
+    //                     //cout << "Found predicate to chain with index : " << j << endl;
+    //                     Predicate* temp_pred = predicates[i];
+    //                     predicates[i] = predicates[j];
+    //                     predicates[j] = temp_pred;
+    //
+    //                     relations_set.insert(predicates[j]->relation1);
+    //                     relations_set.insert(predicates[j]->relation2);
+    //                     break;
+    //                 }
+    //           }
+    //       }
+    // }
 
 
     //execute every predicate
@@ -113,7 +122,7 @@ int DatabaseSystem::execute_query(){
         //this function in similar to self join and Index is not needed
         else if((query->find_offset(predicates[i]->relation1) != -1) &&
                 (query->find_offset(predicates[i]->relation2) != -1)){
-                    cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
+                    //cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
                     pp_join(predicates[i]);
                 }
         //join predicate
@@ -121,18 +130,18 @@ int DatabaseSystem::execute_query(){
         //1) both relations are unprocessed (if first predicate is join)
         //2) one of the two relations is already processed and the other isn't
         else{
-            cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
+            //cout << "exec Join: " << predicates[i]->relation1 <<"."<<predicates[i]->column1<< "=" <<  predicates[i]->relation2 <<"."<<predicates[i]->column2<< endl;
             joiner->handle_predicate(query, predicates[i]);
         }
 
-        cout << "SUCCESS\n";
+        //cout << "SUCCESS\n";
 
         //if there are not intermediate results, stop executing this query
         if(result_buffer->size() == 0){
             break;
         }
     }
-    cout << "===================" << endl;
+    //cout << "===================" << endl;
     //print checksums
     if(result_buffer->size() == 0){
         for(int i = 0; i < query->get_num_of_projections(); i++){
@@ -196,7 +205,7 @@ int DatabaseSystem::execute_query(){
 }
 
 int DatabaseSystem::filter(Predicate* predicate){
-    cout << "Filter predicate is handled...";
+    //cout << "Filter predicate is handled...";
     //get column the function will work with
     uint64_t* column = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
 
@@ -247,7 +256,7 @@ int DatabaseSystem::filter(Predicate* predicate){
 }
 
 int DatabaseSystem::self_join(Predicate* predicate){
-    cout << "Self join is handled...";
+    //cout << "Self join is handled...";
     //get the columns the function will work with
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation1]->get_column(predicate->column2);
@@ -291,7 +300,7 @@ int DatabaseSystem::self_join(Predicate* predicate){
 }
 
 int DatabaseSystem::pp_join(Predicate* predicate){
-    cout << "pp_join is handled...";
+    //cout << "pp_join is handled...";
     //get the columns the function will work with
     uint64_t* column1 = query->get_relations()[predicate->relation1]->get_column(predicate->column1);
     uint64_t* column2 = query->get_relations()[predicate->relation2]->get_column(predicate->column2);
