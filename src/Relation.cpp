@@ -1,4 +1,4 @@
-#include "Relation.h"
+#include "../include/Relation.h"
 
 Relation::Relation(char* file_name){
     //open relation's binary file

@@ -12,32 +12,32 @@ CFLAGS = -std=c++11
 #LIBS = -lmylib -lm
 
 # define the C source files
-SRCS = main.cpp Joiner.cpp Query.cpp Relation.cpp DatabaseSystem.cpp
+SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp
 
 # define the C object files 
-OBJS = main.o Joiner.o Query.o Relation.o DatabaseSystem.o
+OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o
 
 # define the executable file 
-MAIN = dbsystem
+MAIN = bin/dbsystem
 
 all:    $(OBJS)
 		$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS)
 		@echo Database System Compiled Successfully
 
-main.o:	main.cpp
-		$(CC) $(CFLAGS) $(INCLUDES) -c main.cpp
+bin/main.o:	src/main.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/main.cpp -o bin/main.o
 
-Joiner.o:	Joiner.cpp
-		$(CC) $(CFLAGS) $(INCLUDES) -c Joiner.cpp
+bin/Joiner.o:	src/Joiner.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/Joiner.cpp -o bin/Joiner.o
 
-DatabaseSystem.o:	DatabaseSystem.cpp
-		$(CC) $(CFLAGS) $(INCLUDES) -c DatabaseSystem.cpp
+bin/DatabaseSystem.o:	src/DatabaseSystem.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/DatabaseSystem.cpp -o bin/DatabaseSystem.o
 
-Query.o:	Query.cpp
-		$(CC) $(CFLAGS) $(INCLUDES) -c Query.cpp
+bin/Query.o:	src/Query.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/Query.cpp -o bin/Query.o
 
-Relation.o:	Relation.cpp
-		$(CC) $(CFLAGS) $(INCLUDES) -c Relation.cpp
+bin/Relation.o:	src/Relation.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/Relation.cpp -o bin/Relation.o
 
 clean:
-		$(RM) *.o $(MAIN) 
+		$(RM) bin/*.o $(MAIN) 

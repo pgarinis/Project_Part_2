@@ -1,4 +1,4 @@
-#include "Joiner.h"
+#include "../include/Joiner.h"
 #include <unordered_map>
 
 using namespace std;
@@ -19,7 +19,7 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
 }
 
 Joiner::~Joiner(){
-    delete temp_set;   
+    delete temp_set;
 }
 
 int Joiner::handle_predicate(Query* query, Predicate* predicate){

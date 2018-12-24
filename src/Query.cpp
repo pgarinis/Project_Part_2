@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <cstdlib>
 #include <cstring>
-#include "Query.h"
+#include "../include/Query.h"
 #define BUFF_SIZE 256
 
 Query::Query():

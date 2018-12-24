@@ -1,10 +1,10 @@
-#include "DatabaseSystem.h"
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
 #include <cstdlib>
 #include <cstring>
-#include "Relation.h"
+#include "../include/Relation.h"
+#include "../include/DatabaseSystem.h"
 #include <bits/stdc++.h> //unordered_set
 #define BUFF_SIZE 256
 
