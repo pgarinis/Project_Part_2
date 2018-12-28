@@ -40,4 +40,23 @@ bin/Relation.o:	src/Relation.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -c src/Relation.cpp -o bin/Relation.o
 
 clean:
-		$(RM) bin/*.o $(MAIN) 
+		$(RM) bin/*.o $(MAIN)
+
+fast:    bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -o $(MAIN) bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o
+		@echo Database System Compiled Successfully
+
+bin/fmain.o:	src/main.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/main.cpp -o bin/fmain.o
+
+bin/fJoiner.o:	src/Joiner.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -funroll-loops -c src/Joiner.cpp -o bin/fJoiner.o
+
+bin/fDatabaseSystem.o:	src/DatabaseSystem.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -funroll-loops -c src/DatabaseSystem.cpp -o bin/fDatabaseSystem.o
+
+bin/fQuery.o:	src/Query.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -funroll-loops -c src/Query.cpp -o bin/fQuery.o
+
+bin/fRelation.o:	src/Relation.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/Relation.cpp -o bin/fRelation.o

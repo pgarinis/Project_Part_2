@@ -7,7 +7,7 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
     result_buffer(result_buffer)
 {
     //sysconf(_SC_LEVEL1_DCACHE_LINESIZE) get l1 cache size
-    h1_num_of_buckets = 512;
+    h1_num_of_buckets = 128;
     h1_num_of_bits = (int)log2(h1_num_of_buckets);
     h2_num_of_buckets = 16699;
     h2_num_of_bits = (int)log2(h2_num_of_buckets);
@@ -177,29 +177,13 @@ int Joiner::create_and_compute_new_column(){
         //calculate new column for the processed relation(relation1)
         new_column[0] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * temp_set->size());
 
-        //iterator for result_buffer
-        vector<uint64_t>::iterator it = (*result_buffer)->begin();
-        vector<uint64_t>::iterator it0;
-
-        //clear temporal set to use it again for the same reason as before
-        temp_set->clear();
-
         //find relation1's offset in tuple
         int offset1 = query->find_offset(predicate->relation1);
 
-        //TODO: can iterate over temp_set instead of new buffer. it should be faster
-        //iterate over result buffer to calculate new_column for relation1
-        while(it != (*result_buffer)->end()){
-            it0 = it + offset1;
+        for (unordered_set<uint64_t>::iterator it0 = temp_set->begin(); it0 != temp_set->end(); it0++) {
             hash_value = h1(column[0][*it0]);
-            //if its first time adding this row_id to new_column[0]
-            if(temp_set->find(*it0) == temp_set->end()){
-                temp_set->insert(*it0);
-                new_column[0][copy_of_psum_array[0][hash_value]].set(*it0 ,column[0][*it0]);
-                copy_of_psum_array[0][hash_value]++;
-            }
-
-            it += query->get_tuple_size();
+            new_column[0][copy_of_psum_array[0][hash_value]].set(*it0 ,column[0][*it0]);
+            copy_of_psum_array[0][hash_value]++;
         }
     }
     else if(join_type == 2){
@@ -320,6 +304,7 @@ int Joiner::create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_a
 
 int Joiner::join(){
     vector<uint64_t>* new_vector = new vector<uint64_t>();
+    new_vector->reserve(8192);
     //int temp_set_init_size = temp_set->size();
     if(join_type == 0){
         NewColumnEntry* unindexed_relation = new_column[!join_index];

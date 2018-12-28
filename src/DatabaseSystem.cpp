@@ -56,9 +56,11 @@ int DatabaseSystem::load_relations(){
 
 int DatabaseSystem::handle_load(){
     int code;
+    result_buffer->reserve(8192);
     while( (code = construct_query()) != STOP_COMMAND){
         if(code != WAIT_COMMAND){
             result_buffer->clear();
+            result_buffer->reserve(8192);
             execute_query();
 
         }
@@ -238,7 +240,7 @@ int DatabaseSystem::filter(Predicate* predicate){
 
         //store new results in new_result_buffer
         vector<uint64_t>* new_result_buffer = new vector<uint64_t>;
-
+        new_result_buffer->reserve(8192);
         //iterate over result buffer and keep only tuples that are qualified
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()) {
@@ -281,6 +283,7 @@ int DatabaseSystem::self_join(Predicate* predicate){
 
         //store new results in new_result_buffer
         vector<uint64_t>* new_result_buffer = new vector<uint64_t>;
+        new_result_buffer->reserve(8192);
 
         //iterate over result buffer and keep only tuples that are qualified
         vector<uint64_t>::iterator it = result_buffer->begin();
