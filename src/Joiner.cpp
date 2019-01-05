@@ -1,5 +1,8 @@
 #include "../include/Joiner.h"
 #include <unordered_map>
+#include "../include/HistogramJob.h"
+#include "../include/PartitionJob.h"
+#include "../include/JobScheduler.h"
 
 using namespace std;
 
@@ -83,9 +86,27 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
 }
 
 int Joiner::segmentation(){
+    //testing implementation
+
+    JobScheduler* jobScheduler = new JobScheduler(4,this);
+    //init a barrier to wait on hist jobs
+    jobScheduler->initBarrier(4);
+    //create and add Hist jobs to scheduler
+    for(int i = 0; i < 4; i++){
+        jobScheduler->add_job( new HistogramJob() );
+    }
+    jobScheduler->waitOnBarrier();
+    cout << "Hist jobs finished" << endl;
+    //wait on barrier until all hist jobs finished
+    //add jobs to scheduler
+    //barrier(num_of_threads)
+    //add partition jobs
+    //barrier(num_of_threads)
+
     create_and_compute_hist_array();
     create_and_compute_psum_array();
     create_and_compute_new_column();
+    //scheduler.function(2xcolumns, )
     //cout << "Both relations segmentated successfully!" << endl;
     return 0;
 }
@@ -328,15 +349,17 @@ int Joiner::join(){
                 //for easier reading of code
                 NewColumnEntry cur_row = unindexed_relation[i];
 
+                uint64_t val = cur_row.get_value();
+
                 //take the bucket needed
-                int bucket_num = h1(cur_row.get_value());
+                int bucket_num = h1(val);
 
                 //search index for this record
-                int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
+                int index = index_array[bucket_num].get_bucket_array()[h2(val)];
 
                 //traverse chain array and push qualified row_ids to respective vector
                 while(index != -1){
-                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
+                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == val)
                         array_of_vectors[i]->push_back(indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id());
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
@@ -363,15 +386,16 @@ int Joiner::join(){
                 //for easier reading of code
                 NewColumnEntry cur_row = unindexed_relation[i];
 
+                uint64_t val = cur_row.get_value();
                 //take the bucket needed
-                int bucket_num = h1(cur_row.get_value());
+                int bucket_num = h1(val);
 
                 //search index for this record
-                int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
+                int index = index_array[bucket_num].get_bucket_array()[h2(val)];
 
                 //traverse chain array and push qualified row_ids to respective vector
                 while(index != -1){
-                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value())
+                    if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == val)
                         array_of_vectors[index + psum_array[join_index][bucket_num]]->push_back(cur_row.get_row_id());
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
@@ -431,15 +455,16 @@ int Joiner::join(){
             //for easier reading of code
             NewColumnEntry cur_row = unindexed_relation[i];
 
+            uint64_t val = cur_row.get_value();
             //take the bucket needed
-            int bucket_num = h1(cur_row.get_value());
+            int bucket_num = h1(val);
 
             //search index for this record
-            int index = index_array[bucket_num].get_bucket_array()[h2(cur_row.get_value())];
+            int index = index_array[bucket_num].get_bucket_array()[h2(val)];
 
             //traverse chain array and push qualified row_ids to respective vector
             while(index != -1){
-                if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == cur_row.get_value()){
+                if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == val){
                     uint64_t row1 = cur_row.get_row_id();
                     uint64_t row2 = indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id();
                     //insert to results with correct order

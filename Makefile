@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -std=c++11
 
 # define any directories containing header files other than /usr/include
-#INCLUDES =
+#INCLUDES = include/Job.h include/HistogramJob.h include/PartitionJob.h
 #INCLUDES_TEST = 
 
 # define library paths in addition to /usr/lib
@@ -12,16 +12,16 @@ CFLAGS = -std=c++11
 #LIBS = -lmylib -lm
 
 # define the C source files
-SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp
+SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp src/JobScheduler.cpp
 
 # define the C object files 
-OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o
+OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o bin/JobScheduler.o
 
 # define the executable file 
 MAIN = bin/dbsystem
 
 all:    $(OBJS)
-		$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS)
+		$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) -lpthread
 		@echo Database System Compiled Successfully
 
 bin/main.o:	src/main.cpp
@@ -29,6 +29,9 @@ bin/main.o:	src/main.cpp
 
 bin/Joiner.o:	src/Joiner.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -c src/Joiner.cpp -o bin/Joiner.o
+
+bin/JobScheduler.o: src/JobScheduler.cpp
+		$(CC) $(CFLAGS) -pthread $(INCLUDES) -c src/JobScheduler.cpp -o bin/JobScheduler.o
 
 bin/DatabaseSystem.o:	src/DatabaseSystem.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -c src/DatabaseSystem.cpp -o bin/DatabaseSystem.o
