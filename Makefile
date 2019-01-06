@@ -3,10 +3,10 @@ CFLAGS = -std=c++11
 
 # define any directories containing header files other than /usr/include
 #INCLUDES = include/Job.h include/HistogramJob.h include/PartitionJob.h
-#INCLUDES_TEST = 
+#INCLUDES_TEST =
 
 # define library paths in addition to /usr/lib
-#LFLAGS = 
+#LFLAGS =
 
 # define any libraries to link into executable:
 #LIBS = -lmylib -lm
@@ -14,10 +14,10 @@ CFLAGS = -std=c++11
 # define the C source files
 SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp src/JobScheduler.cpp
 
-# define the C object files 
+# define the C object files
 OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o bin/JobScheduler.o
 
-# define the executable file 
+# define the executable file
 MAIN = bin/dbsystem
 
 all:    $(OBJS)

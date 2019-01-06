@@ -23,18 +23,16 @@ void* JobScheduler::thread_main_loop(void){
 
         //run the job
         cur_job->run();
+        cout << " job ran xd" << endl;
 
-        //on barrier created - wait for cond which is signaled by barrier
-        cout << "thread waiting on pthread barrier" << endl;
-        pthread_barrier_wait(&barrier); //thread wait on barrier
-
-        cout << "thread leaved from pthread barrier" << endl;
-
-        pthread_mutex_lock (&barrier_mutex);
-        pthread_cond_signal (&cond_barrier);
-        cout << "thread signaled barrier cond" << endl;
-        pthread_mutex_unlock (&barrier_mutex);
-
+        pthread_mutex_lock (&jobs_mutex);
+        num_of_jobs--;
+        if(num_of_jobs == 0){
+            cout << "jobs finished "<<endl;
+            sem_post(&sem);
+            sem_wait(&sem);
+        }
+        pthread_mutex_unlock (&jobs_mutex);
     }
 }
 
@@ -44,10 +42,11 @@ JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
     this->num_of_threads = num_of_threads;
 
     //initialise synch structs
-    pthread_mutex_init(&barrier_mutex, NULL);
     pthread_mutex_init(&list_mutex, NULL);
+    pthread_mutex_init(&jobs_mutex, NULL);
     pthread_cond_init(&cond_nonempty, NULL);
-    pthread_cond_init(&cond_barrier, NULL);
+    sem_init (&sem, 0, 0);
+
     //make running threads
     pthread_t tid;
     for(int i = 0; i < num_of_threads; i++)
@@ -60,22 +59,8 @@ JobScheduler::~JobScheduler(){
 
 //joiner adds jobs through this function
 void JobScheduler::add_job(Job* job){
-    pthread_mutex_lock (&list_mutex);
+    pthread_mutex_lock(&list_mutex);
     jobs.push_front(job);
     cout << "put job" << endl;
-    pthread_mutex_unlock (&list_mutex);
-    pthread_cond_signal(&cond_nonempty);
-}
-
-int JobScheduler::initBarrier(int num){
-    //make a pthread barrier for num jobs
-    return pthread_barrier_init(&barrier,NULL,num);
-}
-
-void JobScheduler::waitOnBarrier(){
-    //make a pthread barrier
-    cout << "waiting on barrier" << endl;
-    pthread_cond_wait(&cond_barrier,&barrier_mutex);
-    pthread_barrier_destroy(&barrier);
-
+    pthread_mutex_unlock(&list_mutex);
 }
