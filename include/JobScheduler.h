@@ -4,7 +4,6 @@
 #include "Job.h"
 #include <list>
 #include <pthread.h>
-#include <semaphore.h>
 #include "Joiner.h"
 using namespace std;
 
@@ -18,12 +17,14 @@ class JobScheduler{
     //mutexes
     pthread_mutex_t list_mutex;
     pthread_cond_t cond_nonempty;
-    pthread_mutex_t jobs_mutex;
+
+    //barrier
+    pthread_mutex_t barrier_mutex;
+    pthread_cond_t cond_barrier;
+    pthread_barrier_t barrier;
+
 
 public:
-    int num_of_jobs;
-    //semaphore
-    sem_t sem;
     //creates running threads
     JobScheduler(int num_of_threads, Joiner* j);
     ~JobScheduler();

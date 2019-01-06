@@ -3,6 +3,7 @@
 #include "../include/HistogramJob.h"
 #include "../include/PartitionJob.h"
 #include "../include/JobScheduler.h"
+#include "unistd.h"
 
 using namespace std;
 
@@ -89,16 +90,27 @@ int Joiner::segmentation(){
     //testing implementation
 
     JobScheduler* jobScheduler = new JobScheduler(4,this);
-
+    //init a barrier to wait on hist jobs
+    jobScheduler->initBarrier(4);
     //create and add Hist jobs to scheduler
-    jobScheduler->num_of_jobs = 4;
-    for(int i = 0; i < 4; i++)
+    for(int i = 0; i < 4; i++){
         jobScheduler->add_job( new HistogramJob() );
-
-    sem_wait(&(jobScheduler->sem));
-
-
+    }
+    jobScheduler->waitOnBarrier();
     cout << "Hist jobs finished" << endl;
+
+    jobScheduler->initBarrier(4);
+    //create and add Hist jobs to scheduler
+    for(int i = 0; i < 4; i++){
+        jobScheduler->add_job( new PartitionJob() );
+    }
+    jobScheduler->waitOnBarrier();
+    cout << "Partition jobs finished" << endl;
+    //wait on barrier until all hist jobs finished
+    //add jobs to scheduler
+    //barrier(num_of_threads)
+    //add partition jobs
+    //barrier(num_of_threads)
 
     create_and_compute_hist_array();
     create_and_compute_psum_array();
