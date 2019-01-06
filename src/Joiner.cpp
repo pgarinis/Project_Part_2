@@ -1,8 +1,5 @@
 #include "../include/Joiner.h"
 #include <unordered_map>
-#include "../include/HistogramJob.h"
-#include "../include/PartitionJob.h"
-#include "../include/JobScheduler.h"
 #include "unistd.h"
 
 using namespace std;
@@ -10,6 +7,7 @@ using namespace std;
 Joiner::Joiner(vector<uint64_t>** result_buffer):
     result_buffer(result_buffer)
 {
+    cout <<"Eftasee"<<endl;
     //sysconf(_SC_LEVEL1_DCACHE_LINESIZE) get l1 cache size
     h1_num_of_buckets = 128;
     h1_num_of_bits = (int)log2(h1_num_of_buckets);
@@ -87,30 +85,10 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
 }
 
 int Joiner::segmentation(){
-    //testing implementation
+    job_scheduler = new JobScheduler(4,this);
+    job_scheduler->handle_segmentation();
 
-    JobScheduler* jobScheduler = new JobScheduler(4,this);
-    //init a barrier to wait on hist jobs
-    jobScheduler->initBarrier(4);
-    //create and add Hist jobs to scheduler
-    for(int i = 0; i < 4; i++){
-        jobScheduler->add_job( new HistogramJob() );
-    }
-    jobScheduler->waitOnBarrier();
-    cout << "Hist jobs finished" << endl;
 
-    jobScheduler->initBarrier(4);
-    //create and add Hist jobs to scheduler
-    for(int i = 0; i < 4; i++){
-        jobScheduler->add_job( new PartitionJob() );
-    }
-    jobScheduler->waitOnBarrier();
-    cout << "Partition jobs finished" << endl;
-    //wait on barrier until all hist jobs finished
-    //add jobs to scheduler
-    //barrier(num_of_threads)
-    //add partition jobs
-    //barrier(num_of_threads)
 
     create_and_compute_hist_array();
     create_and_compute_psum_array();

@@ -5,14 +5,18 @@
 #include <list>
 #include <pthread.h>
 #include "Joiner.h"
+#include "../include/PartitionJob.h"
+#include "../include/HistogramJob.h"
 using namespace std;
+class Joiner;
 
 class JobScheduler{
     int num_of_threads;
+    Joiner* joiner;
 
     //list of jobs
     list<Job*> jobs;
-    Joiner* joiner;
+
 
     //mutexes
     pthread_mutex_t list_mutex;
@@ -38,10 +42,12 @@ public:
 
     //joiner adds jobs through this function
     void add_job(Job* job);
-
     int initBarrier(int num);
-
     void waitOnBarrier();
+
+    void handle_segmentation();
+    void handle_join();
+
 };
 
 #endif

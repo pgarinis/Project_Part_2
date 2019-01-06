@@ -5,6 +5,49 @@
 
 using namespace std;
 
+JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
+    //keep pointer to joiner to access his data members
+    joiner = j;
+    this->num_of_threads = num_of_threads;
+
+    //initialise synch structs
+    pthread_mutex_init(&barrier_mutex, NULL);
+    pthread_mutex_init(&list_mutex, NULL);
+    pthread_cond_init(&cond_nonempty, NULL);
+    pthread_cond_init(&cond_barrier, NULL);
+
+    //make running threads
+    pthread_t tid;
+    for(int i = 0; i < num_of_threads; i++)
+        pthread_create(&tid,NULL,thread_fun_wrapper,this);
+}
+
+JobScheduler::~JobScheduler(){
+
+}
+
+
+void JobScheduler::handle_segmentation(){
+        //init a barrier to wait on hist jobs
+        initBarrier(num_of_threads);
+
+        //create and add Hist jobs to scheduler
+        for(int i = 0; i < num_of_threads; i++)
+            add_job(new HistogramJob());
+
+        waitOnBarrier();
+        cout << "Hist jobs finished" << endl;
+
+        initBarrier(num_of_threads);
+        //create and add Hist jobs to scheduler
+        for(int i = 0; i < num_of_threads; i++)
+            add_job( new PartitionJob() );
+        waitOnBarrier();
+        cout << "Segmentaiortadpor jobs done" << endl;
+}
+void JobScheduler::handle_join(){}
+
+
 //THREAD FUNCTION
 void* JobScheduler::thread_main_loop(void){
     //store current job
@@ -39,25 +82,6 @@ void* JobScheduler::thread_main_loop(void){
     }
 }
 
-JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
-    //keep pointer to joiner to access his data members
-    joiner = j;
-    this->num_of_threads = num_of_threads;
-
-    //initialise synch structs
-    pthread_mutex_init(&barrier_mutex, NULL);
-    pthread_mutex_init(&list_mutex, NULL);
-    pthread_cond_init(&cond_nonempty, NULL);
-    pthread_cond_init(&cond_barrier, NULL);
-    //make running threads
-    pthread_t tid;
-    for(int i = 0; i < num_of_threads; i++)
-        pthread_create(&tid,NULL,thread_fun_wrapper,this);
-}
-
-JobScheduler::~JobScheduler(){
-
-}
 
 //joiner adds jobs through this function
 void JobScheduler::add_job(Job* job){

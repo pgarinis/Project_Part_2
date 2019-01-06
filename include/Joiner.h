@@ -13,9 +13,10 @@
 #include <vector>
 #include "Index.h"
 #include "NewColumnEntry.h"
-
+#include "../include/JobScheduler.h"
 using namespace std;
 
+class JobScheduler;
 class Joiner{
     //pass from dbsystem
     Query* query;
@@ -33,6 +34,7 @@ class Joiner{
     unordered_set<uint64_t>* temp_set;
     Index* index_array;
     int join_index;
+    JobScheduler* job_scheduler;
 
     //variables needed for hash functions
     int h1_num_of_buckets;
