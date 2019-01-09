@@ -1,4 +1,5 @@
 #include "../include/Joiner.h"
+#include "../include/JobScheduler.h"
 #include <unordered_map>
 #include "unistd.h"
 

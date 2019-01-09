@@ -4,12 +4,12 @@
 #include "Job.h"
 #include <list>
 #include <pthread.h>
-#include "Joiner.h"
+// #include "Joiner.h"
 #include "../include/PartitionJob.h"
 #include "../include/HistogramJob.h"
 using namespace std;
-class Joiner;
 
+class Joiner;
 class JobScheduler{
     int num_of_threads;
     Joiner* joiner;
@@ -32,7 +32,7 @@ class JobScheduler{
 
 public:
     //creates running threads
-    JobScheduler(int num_of_threads, Joiner* j);
+    JobScheduler(int num_of_threads, Joiner*);
     ~JobScheduler();
 
     void* thread_main_loop(void);

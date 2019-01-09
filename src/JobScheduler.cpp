@@ -1,6 +1,7 @@
 #include <list>
 #include <pthread.h>
 #include "../include/JobScheduler.h"
+#include "../include/Joiner.h"
 
 using namespace std;
 

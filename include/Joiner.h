@@ -13,10 +13,11 @@
 #include <vector>
 #include "Index.h"
 #include "NewColumnEntry.h"
-#include "../include/JobScheduler.h"
+// #include "JobScheduler.h"
 using namespace std;
 
 class JobScheduler;
+
 class Joiner{
 public:
     //pass from dbsystem
