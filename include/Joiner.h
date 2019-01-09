@@ -18,6 +18,7 @@ using namespace std;
 
 class JobScheduler;
 class Joiner{
+public:
     //pass from dbsystem
     Query* query;
     Predicate* predicate;
@@ -41,7 +42,7 @@ class Joiner{
     int h2_num_of_buckets;
     int h1_num_of_bits;
     int h2_num_of_bits;
-  public:
+
     Joiner(vector<uint64_t>** result_buffer);
     ~Joiner();
     /*  getters - setters */

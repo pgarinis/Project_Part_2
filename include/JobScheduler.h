@@ -17,6 +17,8 @@ class JobScheduler{
     //list of jobs
     list<Job*> jobs;
 
+    uint64_t** histograms;
+
 
     //mutexes
     pthread_mutex_t list_mutex;

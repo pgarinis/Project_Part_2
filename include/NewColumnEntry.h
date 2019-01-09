@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NEWCOLUMNENTRY_H
+#define NEWCOLUMNENTRY_H
 #include <stdint.h>
 
 class NewColumnEntry{
@@ -17,3 +18,5 @@ public:
         this->value = value;
     }
 };
+
+#endif
