@@ -8,7 +8,6 @@ using namespace std;
 Joiner::Joiner(vector<uint64_t>** result_buffer):
     result_buffer(result_buffer)
 {
-    cout <<"Eftasee"<<endl;
     //sysconf(_SC_LEVEL1_DCACHE_LINESIZE) get l1 cache size
     h1_num_of_buckets = 128;
     h1_num_of_bits = (int)log2(h1_num_of_buckets);
@@ -18,6 +17,7 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
     new_column[1] = NULL;
     index_array = NULL;
     temp_set = NULL;
+    job_scheduler = new JobScheduler(4,this);
 
 }
 
@@ -86,15 +86,13 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
 }
 
 int Joiner::segmentation(){
-    job_scheduler = new JobScheduler(4,this);
-    job_scheduler->handle_segmentation();
+     //job_scheduler->handle_segmentation();
 
 
 
-    create_and_compute_hist_array();
-    create_and_compute_psum_array();
-    create_and_compute_new_column();
-    //scheduler.function(2xcolumns, )
+     create_and_compute_hist_array();
+     create_and_compute_psum_array();
+     create_and_compute_new_column();
     //cout << "Both relations segmentated successfully!" << endl;
     return 0;
 }
@@ -122,8 +120,7 @@ int Joiner::create_and_compute_hist_array(){
         while( it != (*result_buffer)->end()){
             it0 = it + offset;
             //if it already exists in set, don't do anything
-            if(temp_set->find(*it0) == temp_set->end()){
-                temp_set->insert(*it0);
+            if(temp_set->insert(*it0).second){
                 hash_value = h1(column[0][*it0]);
                 hist_array[0][hash_value]++;
             }
@@ -219,34 +216,11 @@ int Joiner::create_and_compute_new_column(){
 }
 
 int Joiner::indexing(){
+    //decide join index (relation1 or relation2)
     if(join_type == 0){
         //index the smallest new column (for effieciency reasons)
         uint64_t num_of_records = query->get_relations()[predicate->relation2]->get_num_of_records();
         join_index = num_of_records < temp_set->size();
-        // cout << "Join index is : "<<join_index << endl;
-
-        //set variables accordingly to chosen join_index
-        NewColumnEntry* column = new_column[join_index];
-        uint64_t* cur_hist_array = hist_array[join_index];
-        uint64_t* cur_psum_array = psum_array[join_index];
-
-        //create index for every bucket made at segmentation
-        index_array = new Index[h1_num_of_buckets];
-
-        //to make code more readable
-        int hash_value;
-
-        //for every bucket made at segmentation
-        for(int j = 0; j < h1_num_of_buckets; j++){
-            create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
-            //scan whole bucket in order to calculate its chain and bucket array
-            int upper_limit = cur_psum_array[j] + cur_hist_array[j];
-            for(int i = cur_psum_array[j]; i < upper_limit; i++){
-                hash_value = h2(column[i].get_value());
-                index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
-                index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
-            }
-        }
     }
     else if(join_type == 2){
         //result buffer is null, both relations original
@@ -268,28 +242,29 @@ int Joiner::indexing(){
             query->get_order()[query->get_order_index()] = predicate->relation1;
         }
         query->incr_order_index();
+    }
+    // cout << "Join index is : "<<join_index << endl;
 
-        //set variables accordingly to chosen join_index
-        NewColumnEntry* column =  new_column[join_index];
-        uint64_t* cur_hist_array = hist_array[join_index];
-        uint64_t* cur_psum_array = psum_array[join_index];
+    //set variables accordingly to chosen join_index
+    NewColumnEntry* column =  new_column[join_index];
+    uint64_t* cur_hist_array = hist_array[join_index];
+    uint64_t* cur_psum_array = psum_array[join_index];
 
-        //create index for every bucket made at segmentation
-        index_array = new Index[h1_num_of_buckets];
+    //create index for every bucket made at segmentation
+    index_array = new Index[h1_num_of_buckets];
 
-        //to make code more readable
-        int hash_value;
+    //to make code more readable
+    int hash_value;
 
-        //for every bucket made at segmentation
-        for(int j = 0; j < h1_num_of_buckets; j++){
-            create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
-            //scan whole bucket in order to calculate its chain and bucket array
-            int upper_limit = cur_psum_array[j] + cur_hist_array[j];
-            for(int i = cur_psum_array[j]; i < upper_limit; i++){
-                hash_value = h2(column[i].get_value());
-                index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
-                index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
-            }
+    //for every bucket made at segmentation
+    for(int j = 0; j < h1_num_of_buckets; j++){
+        create_and_init_chain_and_bucket_array(&index_array[j], cur_hist_array[j]);
+        //scan whole bucket in order to calculate its chain and bucket array
+        int upper_limit = cur_psum_array[j] + cur_hist_array[j];
+        for(int i = cur_psum_array[j]; i < upper_limit; i++){
+            hash_value = h2(column[i].get_value());
+            index_array[j].get_chain_array()[i - cur_psum_array[j]] = index_array[j].get_bucket_array()[hash_value];
+            index_array[j].get_bucket_array()[hash_value] = i - cur_psum_array[j];
         }
     }
 

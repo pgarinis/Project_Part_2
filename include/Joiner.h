@@ -1,7 +1,7 @@
 #ifndef JOINER_H
 #define JOINER_H
 
-#include <bits/stdc++.h> //unordered_set
+#include <unordered_set>
 #include <fstream>
 #include <stdint.h>
 #include <string>
@@ -9,12 +9,12 @@
 #include <cstring>
 #include <cstdlib>
 #include <math.h>
-#include "Query.h"
 #include <vector>
+using namespace std;
+
+#include "Query.h"
 #include "Index.h"
 #include "NewColumnEntry.h"
-// #include "JobScheduler.h"
-using namespace std;
 
 class JobScheduler;
 

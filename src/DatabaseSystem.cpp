@@ -62,7 +62,6 @@ int DatabaseSystem::handle_load(){
             result_buffer->clear();
             result_buffer->reserve(8192);
             execute_query();
-
         }
         // else{
         //     cout << "Load Handled" << endl;
@@ -111,7 +110,6 @@ int DatabaseSystem::execute_query(){
     //       }
     // }
 
-
     //execute every predicate
     for(int i = 0; i < query->get_num_of_predicates(); i++){
         //filter predicate
@@ -136,16 +134,14 @@ int DatabaseSystem::execute_query(){
             joiner->handle_predicate(query, predicates[i]);
         }
 
-        //cout << "SUCCESS\n";
-
         //if there are not intermediate results, stop executing this query
         if(result_buffer->size() == 0){
             break;
         }
     }
-    //cout << "===================" << endl;
+
     //print checksums
-    if(result_buffer->size() == 0){
+    if(result_buffer->size() == 0){ //no results
         for(int i = 0; i < query->get_num_of_projections(); i++){
             cout << "NULL";
             if(i != query->get_num_of_projections() - 1)
@@ -153,7 +149,7 @@ int DatabaseSystem::execute_query(){
         }
         cout << endl;
     }
-    else{
+    else{ //results exist
         Projection** projections = query->get_projections();
         int num_of_projections = query->get_num_of_projections();
 
@@ -180,13 +176,8 @@ int DatabaseSystem::execute_query(){
         uint64_t* checksums = (uint64_t*)calloc(num_of_projections, sizeof(uint64_t));
         vector<uint64_t>::iterator it = result_buffer->begin();
         while(it != result_buffer->end()){
-            for(int i = 0; i < num_of_projections; i++){
-                // if(calculated[i]->find(*(it+offset_buffer[i])) == calculated[i]->end()){
-                //     calculated[i]->insert(*(it+offset_buffer[i]));
-                //     checksums[i] += proj_columns[i][*(it+offset_buffer[i])];
-                // }
+            for(int i = 0; i < num_of_projections; i++)
                 checksums[i] += proj_columns[i][*(it+offset_buffer[i])];
-            }
             it += query->get_tuple_size();
         }
 
@@ -200,10 +191,6 @@ int DatabaseSystem::execute_query(){
             delete calculated[i];
         free(checksums);
     }
-
-    // print_result_buffer();
-    // for(int i = 0; i < query->get_tuple_size(); i++)
-    //     cout << query->get_order()[i] << endl;
 }
 
 int DatabaseSystem::filter(Predicate* predicate){
