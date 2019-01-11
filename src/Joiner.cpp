@@ -366,15 +366,13 @@ int Joiner::join(){
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
             }
-            int deleted = 0;
+
             for(uint64_t i = 0; i < temp_set->size();i++)
                 if(array_of_vectors[i]->size() == 0){
-                    deleted++;
                     delete array_of_vectors[i];
                     array_of_vectors[i] = NULL;
                     map[indexed_relation[i].get_row_id()] = NULL;
                 }
-            //cout << temp_set->size() <<" - "<<deleted<<endl;
         }
 
         //get needed offset

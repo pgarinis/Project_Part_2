@@ -10,7 +10,6 @@ JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
     joiner = j;
     this->num_of_threads = num_of_threads;
 
-
     //initialise synch structs
     pthread_mutex_init(&barrier_mutex, NULL);
     pthread_mutex_init(&list_mutex, NULL);
@@ -27,6 +26,44 @@ JobScheduler::~JobScheduler(){
 
 }
 
+void JobScheduler::handle_join(){
+    result_vectors = new vector<uint64_t>[num_of_threads];
+    //calculate unindexed relation's number of rows
+    if(joiner->join_index == 0)
+        num_of_rows = joiner->query->get_relations()[predicate->relation2]->get_num_of_records();
+    else if(joiner->join_index == 1)
+        num_of_rows = joiner->query->get_relations()[predicate->relation1]->get_num_of_records();
+
+    uint64_t part = num_of_rows / num_of_threads;
+
+    //for every row in unindexed_relation
+    for(uint64_t i = 0; i < num_of_rows; i++){
+        //for easier reading of code
+        NewColumnEntry cur_row = unindexed_relation[i];
+
+        uint64_t val = cur_row.get_value();
+        //take the bucket needed
+        int bucket_num = h1(val);
+
+        //search index for this record
+        int index = index_array[bucket_num].get_bucket_array()[h2(val)];
+
+        //traverse chain array and push qualified row_ids to respective vector
+        while(index != -1){
+            if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == val){
+                uint64_t row1 = cur_row.get_row_id();
+                uint64_t row2 = indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id();
+                //insert to results with correct order
+                //FIRST push unindexed row id, THEN indexed row id
+                new_vector->push_back(row1);
+                new_vector->push_back(row2);
+
+            }
+            index = index_array[bucket_num].get_chain_array()[index];
+        }
+    }
+    delete[] result_vectors;
+}
 
 void JobScheduler::handle_segmentation(){
         histograms = (uint64_t**)malloc(num_of_threads * sizeof(uint64_t*));
@@ -145,8 +182,6 @@ void JobScheduler::handle_segmentation(){
         free(histograms);
 
 }
-void JobScheduler::handle_join(){}
-
 
 //THREAD FUNCTION
 void* JobScheduler::thread_main_loop(void){

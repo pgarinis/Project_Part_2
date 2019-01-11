@@ -19,6 +19,7 @@ class JobScheduler{
 
     uint64_t** histograms;
 
+    vector<uint64_t>* result_vectors;
 
     //mutexes
     pthread_mutex_t list_mutex;
