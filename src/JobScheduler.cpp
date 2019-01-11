@@ -9,9 +9,7 @@ JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
     //keep pointer to joiner to access his data members
     joiner = j;
     this->num_of_threads = num_of_threads;
-    histograms = (uint64_t**)malloc(num_of_threads * sizeof(uint64_t*));
-    for(int i = 0; i < num_of_threads; i++)
-        histograms[i] = (uint64_t*)calloc(joiner->h1_num_of_buckets , sizeof(uint64_t));
+
 
     //initialise synch structs
     pthread_mutex_init(&barrier_mutex, NULL);
@@ -31,6 +29,9 @@ JobScheduler::~JobScheduler(){
 
 
 void JobScheduler::handle_segmentation(){
+        histograms = (uint64_t**)malloc(num_of_threads * sizeof(uint64_t*));
+        for(int i = 0; i < num_of_threads; i++)
+            histograms[i] = (uint64_t*)calloc(joiner->h1_num_of_buckets , sizeof(uint64_t));
         //init a barrier to wait on hist jobs
         initBarrier(num_of_threads);
 
@@ -141,6 +142,7 @@ void JobScheduler::handle_segmentation(){
 
         waitOnBarrier();
 
+        free(histograms);
 
 }
 void JobScheduler::handle_join(){}

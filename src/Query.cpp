@@ -123,8 +123,8 @@ int Query::read_query(Relation** db_relations, int db_num_of_relations){
             }
             temp_buffer[j] = buffer[i];
         }
-        if(i == strlen(buffer)){//i==limit shmenei pos einai stathera
-            temp_buffer[i] == '\0';
+        if((unsigned int)i == strlen(buffer)){//i==limit shmenei pos einai stathera
+            //temp_buffer[i] == '\0';
             predicates[num_of_predicates - 1]->value = atoi(temp_buffer);
             predicates[num_of_predicates - 1]->relation2 = -1;
             //cout <<  predicates[num_of_predicates - 1]->value << endl;

@@ -27,6 +27,7 @@ public:
         //calculate sub histogram
         for(uint64_t i = start_offset; i <= finish_offset; i++)
             sub_histogram[joiner->h1(column[i])]++;
+        return 0;
     }
 };
 

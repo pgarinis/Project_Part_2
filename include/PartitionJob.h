@@ -34,6 +34,7 @@ public:
             new_column[sub_indices[hash_value]].set(i, column[i]);
             sub_indices[hash_value]++;
         }
+        return 0;
     }
 };
 

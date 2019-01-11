@@ -191,6 +191,7 @@ int DatabaseSystem::execute_query(){
             delete calculated[i];
         free(checksums);
     }
+    return 0;
 }
 
 int DatabaseSystem::filter(Predicate* predicate){
@@ -242,6 +243,7 @@ int DatabaseSystem::filter(Predicate* predicate){
         //set result_buffer to point to the new buffer that contains qualified tuples only
         result_buffer = new_result_buffer;
     }
+    return 0;
 }
 
 int DatabaseSystem::self_join(Predicate* predicate){

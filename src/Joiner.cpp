@@ -85,16 +85,20 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
         temp_set = NULL;
     }
 
+    return 0;
 }
 
 int Joiner::segmentation(){
-     //job_scheduler->handle_segmentation();
+    if(join_type == 2)
+        job_scheduler->handle_segmentation();
+    else{
+        create_and_compute_hist_array();
+        create_and_compute_psum_array();
+        create_and_compute_new_column();
+    }
 
 
 
-     create_and_compute_hist_array();
-     create_and_compute_psum_array();
-     create_and_compute_new_column();
     //cout << "Both relations segmentated successfully!" << endl;
     return 0;
 }
@@ -185,9 +189,6 @@ int Joiner::create_and_compute_new_column(){
         //calculate new column for the processed relation(relation1)
         new_column[0] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * temp_set->size());
 
-        //find relation1's offset in tuple
-        int offset1 = query->find_offset(predicate->relation1);
-
         for (unordered_set<uint64_t>::iterator it0 = temp_set->begin(); it0 != temp_set->end(); it0++) {
             hash_value = h1(column[0][*it0]);
             new_column[0][copy_of_psum_array[0][hash_value]].set(*it0 ,column[0][*it0]);
@@ -198,7 +199,7 @@ int Joiner::create_and_compute_new_column(){
         //calculate new_column for relation1
         uint64_t num_records1 = query->get_relations()[predicate->relation1]->get_num_of_records();
         new_column[0] = (NewColumnEntry*)malloc(num_records1 * sizeof(NewColumnEntry));
-        for(int j = 0; j < num_records1; j++){
+        for(uint64_t j = 0; j < num_records1; j++){
             hash_value = h1(column[0][j]);
             new_column[0][copy_of_psum_array[0][hash_value]].set(j, column[0][j]);
             copy_of_psum_array[0][hash_value]++;
@@ -208,7 +209,7 @@ int Joiner::create_and_compute_new_column(){
     //calculate new column for relation2
     uint64_t num_of_records = query->get_relations()[predicate->relation2]->get_num_of_records();
     new_column[1] = (NewColumnEntry*)malloc(num_of_records * sizeof(NewColumnEntry));
-    for(int j = 0; j < num_of_records; j++){
+    for(uint64_t j = 0; j < num_of_records; j++){
         hash_value = h1(column[1][j]);
         new_column[1][copy_of_psum_array[1][hash_value]].set(j, column[1][j]);
         copy_of_psum_array[1][hash_value]++;
@@ -282,7 +283,7 @@ int Joiner::create_and_init_chain_and_bucket_array(Index* index, uint64_t hist_a
 
     //create chain array and initialise it
     index->set_chain_array(hist_array_value);
-    for(int i = 0; i < hist_array_value; i++)
+    for(uint64_t i = 0; i < hist_array_value; i++)
         index->get_chain_array()[i] = 0;
 
     return 0;
@@ -310,7 +311,7 @@ int Joiner::join(){
         if(join_index == 1){
             //in this loop array of vectors is calculated
             //scan already processed column
-            for(int i = 0; i < temp_set->size(); i++){
+            for(uint64_t i = 0; i < temp_set->size(); i++){
                 //for easier reading of code
                 NewColumnEntry cur_row = unindexed_relation[i];
 
@@ -347,7 +348,7 @@ int Joiner::join(){
 
             //scanning UNINDEXED relation
             uint64_t limit = query->get_relations()[predicate->relation2]->get_num_of_records();
-            for(int i = 0; i < limit; i++){
+            for(uint64_t i = 0; i < limit; i++){
                 //for easier reading of code
                 NewColumnEntry cur_row = unindexed_relation[i];
 
@@ -447,6 +448,6 @@ int Joiner::join(){
     delete *result_buffer;
     //set result_buffer to point to the new buffer that contains qualified tuples only
     *result_buffer = new_vector;
-    std::cerr << "running" << '\n';
+
     return 0;
 }
