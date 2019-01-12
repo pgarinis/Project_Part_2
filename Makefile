@@ -45,8 +45,8 @@ bin/Relation.o:	src/Relation.cpp
 clean:
 		$(RM) bin/*.o $(MAIN)
 
-fast:    bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o
-		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -o $(MAIN) bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o
+fast:    bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -o $(MAIN) bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o -lpthread
 		@echo Database System Compiled Successfully
 
 bin/fmain.o:	src/main.cpp
@@ -54,6 +54,9 @@ bin/fmain.o:	src/main.cpp
 
 bin/fJoiner.o:	src/Joiner.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -funroll-loops -c src/Joiner.cpp -o bin/fJoiner.o
+
+bin/fJobScheduler.o: src/JobScheduler.cpp
+		$(CC) $(CFLAGS) -pthread $(INCLUDES) -Ofast -c src/JobScheduler.cpp -o bin/fJobScheduler.o
 
 bin/fDatabaseSystem.o:	src/DatabaseSystem.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -funroll-loops -c src/DatabaseSystem.cpp -o bin/fDatabaseSystem.o

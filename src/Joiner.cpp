@@ -5,6 +5,17 @@
 
 using namespace std;
 
+#include <time.h>
+#include <sys/time.h>
+double get_wall_time(){
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        //  Handle error
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
 Joiner::Joiner(vector<uint64_t>** result_buffer):
     result_buffer(result_buffer)
 {
@@ -62,12 +73,24 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
     column[1] = query->get_relations()[predicate->relation2]->get_column(predicate->column2);
 
     //precedures to complete a join predicate
+    //double t0 = get_wall_time();
     segmentation();
+    //std::cerr << "Segmentation finished in: " << get_wall_time() - t0 << endl;
+    //t0 = get_wall_time();
     indexing();
-    if(join_type == 0)
+    //std::cerr << "Indexing finished in: " << get_wall_time() - t0 << endl;
+    if(join_type == 0){
+        //cerr << "join type 0" << endl;
+        //t0 = get_wall_time();
         join();
-    else
+        //std::cerr << "Join type 0 finished in: " << get_wall_time() - t0 << endl;
+    }
+    else{
+        //cerr << "join type 2" << endl;
+        //t0 = get_wall_time();
         job_scheduler->handle_join();
+        //std::cerr << "Join type 2 (threads) finished in: " << get_wall_time() - t0 << endl;
+    }
 
     if(new_column[0] != NULL)
         free(new_column[0]);
@@ -117,6 +140,7 @@ int Joiner::create_and_compute_hist_array(){
         //compute hist array for relation1 (which is already processed)
         //find relation1's offset in the result tuple
         int offset = query->find_offset(predicate->relation1);
+        int tuple_size = query->get_tuple_size();
 
         //temporal set is needed to know the size of the relation that already exists in results TODO:free
         temp_set = new unordered_set<uint64_t>();
@@ -124,7 +148,8 @@ int Joiner::create_and_compute_hist_array(){
         //search whole result buffer and compute hist_array for relation1
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
         vector<uint64_t>::iterator it0; //make code more efficient
-        while( it != (*result_buffer)->end()){
+        vector<uint64_t>::iterator it_end = (*result_buffer)->end();
+        while( it != it_end){
             it0 = it + offset;
             //if it already exists in set, don't do anything
             if(temp_set->insert(*it0).second){
@@ -133,7 +158,7 @@ int Joiner::create_and_compute_hist_array(){
             }
 
             //move to next tuple
-            it += query->get_tuple_size();
+            it += tuple_size;
         }
     }
     else if(join_type == 2){
@@ -189,8 +214,8 @@ int Joiner::create_and_compute_new_column(){
     if(join_type == 0){
         //calculate new column for the processed relation(relation1)
         new_column[0] = (NewColumnEntry*)malloc(sizeof(NewColumnEntry) * temp_set->size());
-
-        for (unordered_set<uint64_t>::iterator it0 = temp_set->begin(); it0 != temp_set->end(); it0++) {
+        unordered_set<uint64_t>::iterator end = temp_set->end();
+        for (unordered_set<uint64_t>::iterator it0 = temp_set->begin(); it0 != end; it0++) {
             hash_value = h1(column[0][*it0]);
             new_column[0][copy_of_psum_array[0][hash_value]].set(*it0 ,column[0][*it0]);
             copy_of_psum_array[0][hash_value]++;
@@ -301,12 +326,15 @@ int Joiner::join(){
 
         //using this array of vectors to prevent multiple same calculations TODO:free
         //every needed calculation wll be done only 1 time
+        //double t0 = get_wall_time();
         vector<uint64_t>* array_of_vectors[temp_set->size()];
         for(uint64_t i = 0; i < temp_set->size(); i++)
             array_of_vectors[i] = new vector<uint64_t>();
 
         //create a mapping (from row_id to its respective vector from array_of_vectors)
         unordered_map<uint64_t, vector<uint64_t>*> map;
+
+
 
         //if unprocessed relation is indexed
         if(join_index == 1){
@@ -331,6 +359,8 @@ int Joiner::join(){
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
 
+
+
                 //if there was no match, delete vector
                 if(array_of_vectors[i]->size() == 0){
                     delete array_of_vectors[i];
@@ -339,13 +369,17 @@ int Joiner::join(){
                 }
                 else//create respective mapping
                     map[cur_row.get_row_id()] = array_of_vectors[i];
+
             }
+            //std::cerr << "join index 1 main loop finished in: " << get_wall_time() - t0 << endl;
         }
         //if processed relation is indexed
         else if (join_index == 0){
             //do the mapping
             for(uint64_t i = 0; i < temp_set->size(); i++)
                 map[indexed_relation[i].get_row_id()] = array_of_vectors[i];
+
+
 
             //scanning UNINDEXED relation
             uint64_t limit = query->get_relations()[predicate->relation2]->get_num_of_records();
@@ -367,6 +401,7 @@ int Joiner::join(){
                     index = index_array[bucket_num].get_chain_array()[index];
                 }
             }
+            //std::cerr << " ----join index 0 main loop finished in: " << get_wall_time() - t0 << endl;
 
             for(uint64_t i = 0; i < temp_set->size();i++)
                 if(array_of_vectors[i]->size() == 0){
@@ -376,24 +411,31 @@ int Joiner::join(){
                 }
         }
 
+        //t0 = get_wall_time();
         //get needed offset
         int offset = query->find_offset(predicate->relation1);
+        int tuple_size = query->get_tuple_size();
         //now iterate over result buffer
         vector<uint64_t>::iterator it = (*result_buffer)->begin();
-        vector<uint64_t>::iterator it0;
-        while(it != (*result_buffer)->end()){
-            it0 = it + offset;
-            vector<uint64_t>* v = map[*it0];
-            if(v != NULL){
-                vector<uint64_t>::iterator vit = v->begin();
-                while(vit != v->end()){
-                    for(int i = 0;i < query->get_tuple_size(); i++)
+        //vector<uint64_t>::iterator it0;
+        vector<uint64_t>* v;
+        vector<uint64_t>::iterator vit;
+        vector<uint64_t>::iterator res_buffer_end = (*result_buffer)->end();
+        vector<uint64_t>::iterator vend;
+        while(it != res_buffer_end){
+            //it0 = it + offset;
+            v = map[*(it + offset)];
+            if(v){
+                vit = v->begin();
+                vend = v->end();
+                while(vit != vend){
+                    for(int i = 0;i < tuple_size; ++i)
                         new_vector->push_back(*(it+i));
                     new_vector->push_back(*vit);
-                    vit++;
+                    ++vit;
                 }
             }
-            it += query->get_tuple_size();
+            it += tuple_size;
         }
 
         for(uint64_t i = 0; i < temp_set->size(); i++)
@@ -404,6 +446,7 @@ int Joiner::join(){
         query->get_order()[query->get_order_index()] = predicate->relation2;
         query->incr_order_index();
         //delete previous result buffer
+        //std::cerr << "rest finished in: " << get_wall_time() - t0 << endl;
 
     }
     else if(join_type == 2){
