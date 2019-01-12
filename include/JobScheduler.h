@@ -7,6 +7,7 @@
 // #include "Joiner.h"
 #include "../include/PartitionJob.h"
 #include "../include/HistogramJob.h"
+#include "../include/JoinJob.h"
 using namespace std;
 
 class Joiner;

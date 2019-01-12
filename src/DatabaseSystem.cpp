@@ -191,6 +191,7 @@ int DatabaseSystem::execute_query(){
             delete calculated[i];
         free(checksums);
     }
+
     return 0;
 }
 

@@ -27,41 +27,24 @@ JobScheduler::~JobScheduler(){
 }
 
 void JobScheduler::handle_join(){
-    result_vectors = new vector<uint64_t>[num_of_threads];
-    //calculate unindexed relation's number of rows
-    if(joiner->join_index == 0)
-        num_of_rows = joiner->query->get_relations()[predicate->relation2]->get_num_of_records();
-    else if(joiner->join_index == 1)
-        num_of_rows = joiner->query->get_relations()[predicate->relation1]->get_num_of_records();
+    //create result vectors
+    result_vectors = new vector<uint64_t>[joiner->h1_num_of_buckets];
 
-    uint64_t part = num_of_rows / num_of_threads;
+    //init a barrier to wait on hist jobs
 
-    //for every row in unindexed_relation
-    for(uint64_t i = 0; i < num_of_rows; i++){
-        //for easier reading of code
-        NewColumnEntry cur_row = unindexed_relation[i];
-
-        uint64_t val = cur_row.get_value();
-        //take the bucket needed
-        int bucket_num = h1(val);
-
-        //search index for this record
-        int index = index_array[bucket_num].get_bucket_array()[h2(val)];
-
-        //traverse chain array and push qualified row_ids to respective vector
-        while(index != -1){
-            if(indexed_relation[index + psum_array[join_index][bucket_num]].get_value() == val){
-                uint64_t row1 = cur_row.get_row_id();
-                uint64_t row2 = indexed_relation[index + psum_array[join_index][bucket_num]].get_row_id();
-                //insert to results with correct order
-                //FIRST push unindexed row id, THEN indexed row id
-                new_vector->push_back(row1);
-                new_vector->push_back(row2);
-
-            }
-            index = index_array[bucket_num].get_chain_array()[index];
-        }
+    //create 2^n jobs
+    for(int i = 0; i < joiner->h1_num_of_buckets; i+=4){
+        initBarrier(num_of_threads);
+        for(int j = 0; j < num_of_threads; j++)
+            add_job(new JoinJob(this->joiner, i+j, &result_vectors[i+j]));
+        waitOnBarrier();
     }
+
+    //merge results
+    for(int i = 0; i < joiner->h1_num_of_buckets; i++)
+        (*(joiner->result_buffer))->insert((*(joiner->result_buffer))->end(), result_vectors[i].begin(), result_vectors[i].end());
+
+
     delete[] result_vectors;
 }
 
@@ -148,7 +131,6 @@ void JobScheduler::handle_segmentation(){
                 starting_indices[i+half_threads][j] = starting_indices[half_threads+i-1][j] + histograms[half_threads+i-1][j];
             }
         }
-
 
         //malloc new columns
         joiner->new_column[0] = (NewColumnEntry*)malloc(num_of_rows_0 * sizeof(NewColumnEntry));

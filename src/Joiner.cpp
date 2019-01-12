@@ -64,7 +64,10 @@ int Joiner::handle_predicate(Query* query, Predicate* predicate){
     //precedures to complete a join predicate
     segmentation();
     indexing();
-    join();
+    if(join_type == 0)
+        join();
+    else
+        job_scheduler->handle_join();
 
     if(new_column[0] != NULL)
         free(new_column[0]);
@@ -96,8 +99,6 @@ int Joiner::segmentation(){
         create_and_compute_psum_array();
         create_and_compute_new_column();
     }
-
-
 
     //cout << "Both relations segmentated successfully!" << endl;
     return 0;
@@ -402,6 +403,8 @@ int Joiner::join(){
         //set order array since new tuple got bigger
         query->get_order()[query->get_order_index()] = predicate->relation2;
         query->incr_order_index();
+        //delete previous result buffer
+
     }
     else if(join_type == 2){
         NewColumnEntry* unindexed_relation = new_column[!join_index];
@@ -440,12 +443,13 @@ int Joiner::join(){
                 index = index_array[bucket_num].get_chain_array()[index];
             }
         }
+
     }
 
-    //delete previous result buffer
     delete *result_buffer;
-    //set result_buffer to point to the new buffer that contains qualified tuples only
+    // //set result_buffer to point to the new buffer that contains qualified tuples only
     *result_buffer = new_vector;
+
 
     return 0;
 }
