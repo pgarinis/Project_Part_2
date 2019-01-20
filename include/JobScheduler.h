@@ -31,6 +31,9 @@ class JobScheduler{
     pthread_cond_t cond_barrier;
     pthread_barrier_t barrier;
 
+    //thread pool
+    pthread_t* tid;
+
 
 public:
     //creates running threads

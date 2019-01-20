@@ -23,7 +23,7 @@ TEST = ./testexec
 all:	./googletest/
 		g++ -std=c++11 -isystem ./googletest/include -I ./googletest -pthread -c ./googletest/src/gtest-all.cc -o ./googletest/gtest-all.o
 		ar -rv ./libgtest.a ./googletest/gtest-all.o
-		g++ -std=c++11 -isystem ./googletest/include -I ./googletest/ -pthread tests/dbsystem_spec.cpp ../Joiner.cpp ../Relation.cpp ../Query.cpp ../DatabaseSystem.cpp ./libgtest.a -o ./testexec
+		g++ -std=c++11 -isystem ./googletest/include -I ./googletest/ -pthread tests/dbsystem_spec.cpp ../src/Joiner.cpp ../src/Relation.cpp ../src/Query.cpp ../src/DatabaseSystem.cpp ../src/JobScheduler.cpp ../src/HistogramJob.cpp ../src/PartitionJob.cpp ../src/JoinJob.cpp ./libgtest.a -o ./testexec
 
 
 clean:

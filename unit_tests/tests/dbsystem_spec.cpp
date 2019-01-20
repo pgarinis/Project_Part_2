@@ -7,8 +7,10 @@
 #include <cstdlib>
 #include <math.h>
 
-#include "./../../Joiner.h"
-#include "./../../DatabaseSystem.h"
+#include "./../../include/Joiner.h"
+#include "./../../include/DatabaseSystem.h"
+#include "./../../include/Query.h"
+// #include "./../../include/Index.h"
 
 using namespace std;
 
@@ -16,6 +18,29 @@ TEST(LoadRelationsSuite, LoadRelationsToMemoryTest) {
   // DatabaseSystem *db = new DatabaseSystem();
   // EXPECT_EQ(db->load_relations(),0);
   // delete db;
+}
+
+TEST(QuerySuite, SetGetQueryTest) {
+  //Instantiate a query
+  Query *q = new Query();
+  q->set_num_of_relations(3);
+  q->set_num_of_predicates(4);
+  q->set_num_of_projections(2);
+
+  EXPECT_EQ(q->get_num_of_relations(),3);
+  EXPECT_EQ(q->get_num_of_predicates(),4);
+  EXPECT_EQ(q->get_num_of_projections(),2);
+  // delete q;
+}
+
+TEST(NewColumnEntrySuite, SetGetNewColumnTest) {
+  //Instantiate a query
+  NewColumnEntry *nc = new NewColumnEntry();
+  nc->set(10,100);
+
+  EXPECT_EQ(nc->get_row_id(),10);
+  EXPECT_EQ(nc->get_value(),100);
+  // delete nc;
 }
 
 TEST(SegmentationSuite, HistArrayTest) {

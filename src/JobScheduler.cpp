@@ -16,13 +16,28 @@ JobScheduler::JobScheduler(int num_of_threads, Joiner* j){
     pthread_cond_init(&cond_nonempty, NULL);
     pthread_cond_init(&cond_barrier, NULL);
 
-    //make running threads
-    pthread_t tid;
+    //make thread pool
+    tid = (pthread_t*) malloc(num_of_threads * sizeof(pthread_t));
     for(int i = 0; i < num_of_threads; i++)
-        pthread_create(&tid,NULL,thread_fun_wrapper,this);
+        pthread_create(&tid[i],NULL,thread_fun_wrapper,this);
 }
 
 JobScheduler::~JobScheduler(){
+    // TODO join threads in tread pool maybe with signal or another cond
+    // pthread_cond_broadcast(&cond_nonempty);
+    // pthread_cond_broadcast(&cond_barrier);
+    // pthread_mutex_unlock (&list_mutex);
+    // pthread_mutex_unlock (&barrier_mutex);
+    //
+    // for(int i = 0;i<num_of_threads;i++)
+    //     pthread_join(tid[i],NULL);
+    //
+    free(tid);
+
+    pthread_cond_destroy(&cond_nonempty);
+    pthread_cond_destroy(&cond_barrier);
+    pthread_mutex_destroy(&list_mutex);
+    pthread_mutex_destroy(&barrier_mutex);
 
 }
 
@@ -30,20 +45,16 @@ void JobScheduler::handle_join(){
     //create result vectors
     result_vectors = new vector<uint64_t>[joiner->h1_num_of_buckets];
 
-    //init a barrier to wait on hist jobs
-
     //create 2^n jobs
     for(int i = 0; i < joiner->h1_num_of_buckets; i+=4){
-        initBarrier(num_of_threads);
+        initBarrier(num_of_threads); //init a barrier to wait on hist jobs
         for(int j = 0; j < num_of_threads; j++)
             add_job(new JoinJob(this->joiner, i+j, &result_vectors[i+j]));
         waitOnBarrier();
     }
-
     //merge results
     for(int i = 0; i < joiner->h1_num_of_buckets; i++)
         (*(joiner->result_buffer))->insert((*(joiner->result_buffer))->end(), result_vectors[i].begin(), result_vectors[i].end());
-
 
     delete[] result_vectors;
 }
@@ -161,6 +172,8 @@ void JobScheduler::handle_segmentation(){
 
         waitOnBarrier();
 
+        for(int i = 0; i < num_of_threads; i++)
+            free(histograms[i]);
         free(histograms);
 
 }
@@ -174,15 +187,18 @@ void* JobScheduler::thread_main_loop(void){
     while(1){
         //pick job from job list(when list is not empty)
         pthread_mutex_lock (&list_mutex);
+
         while(jobs.size() == 0)
             pthread_cond_wait(&cond_nonempty, &list_mutex);
         //cout << "picked job" << endl;
         cur_job = jobs.front();
         jobs.pop_front();
+
         pthread_mutex_unlock (&list_mutex);
 
         //run the job
         cur_job->run();
+        delete cur_job;
 
         //on barrier created - wait for cond which is signaled by barrier
         //cout << "thread waiting on pthread barrier" << endl;
@@ -194,6 +210,7 @@ void* JobScheduler::thread_main_loop(void){
         if(code == PTHREAD_BARRIER_SERIAL_THREAD)
             pthread_cond_signal (&cond_barrier);
         //cout << "thread signaled barrier cond" << endl;
+
         pthread_mutex_unlock (&barrier_mutex);
 
     }
@@ -216,11 +233,8 @@ int JobScheduler::initBarrier(int num){
 }
 
 void JobScheduler::waitOnBarrier(){
-    //make a pthread barrier
-    //cout << "waiting on barrier" << endl;
-    // pthread_mutex_lock (&barrier_mutex);
+    // n-1 threads wait here for the last thread to release pthread barrier and signal them
     pthread_cond_wait(&cond_barrier,&barrier_mutex);
     pthread_barrier_destroy(&barrier);
-    // pthread_mutex_unlock (&barrier_mutex);
 
 }

@@ -5,16 +5,16 @@
 
 using namespace std;
 
-#include <time.h>
-#include <sys/time.h>
-double get_wall_time(){
-    struct timeval time;
-    if (gettimeofday(&time,NULL)){
-        //  Handle error
-        return 0;
-    }
-    return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
+// #include <time.h>
+// #include <sys/time.h>
+// double get_wall_time(){
+//     struct timeval time;
+//     if (gettimeofday(&time,NULL)){
+//         //  Handle error
+//         return 0;
+//     }
+//     return (double)time.tv_sec + (double)time.tv_usec * .000001;
+// }
 
 Joiner::Joiner(vector<uint64_t>** result_buffer):
     result_buffer(result_buffer)
@@ -33,6 +33,8 @@ Joiner::Joiner(vector<uint64_t>** result_buffer):
 }
 
 Joiner::~Joiner(){
+
+    delete job_scheduler;
 }
 
 int Joiner::handle_predicate(Query* query, Predicate* predicate){

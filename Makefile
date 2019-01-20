@@ -12,10 +12,10 @@ CFLAGS = -std=c++11 -Wall
 #LIBS = -lmylib -lm
 
 # define the C source files
-SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp src/JobScheduler.cpp
+SRCS = src/main.cpp src/Joiner.cpp src/Query.cpp src/Relation.cpp src/DatabaseSystem.cpp src/JobScheduler.cpp src/JoinJob.cpp src/HistogramJob.cpp src/PartitionJob.cpp
 
 # define the C object files
-OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o bin/JobScheduler.o
+OBJS = bin/main.o bin/Joiner.o bin/Query.o bin/Relation.o bin/DatabaseSystem.o bin/JobScheduler.o bin/JoinJob.o bin/HistogramJob.o bin/PartitionJob.o
 
 # define the executable file
 MAIN = bin/dbsystem
@@ -42,11 +42,20 @@ bin/Query.o:	src/Query.cpp
 bin/Relation.o:	src/Relation.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -c src/Relation.cpp -o bin/Relation.o
 
+bin/JoinJob.o:	src/JoinJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/JoinJob.cpp -o bin/JoinJob.o
+
+bin/HistogramJob.o:	src/HistogramJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/HistogramJob.cpp -o bin/HistogramJob.o
+
+bin/PartitionJob.o:	src/PartitionJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -c src/PartitionJob.cpp -o bin/PartitionJob.o
+
 clean:
 		$(RM) bin/*.o $(MAIN)
 
-fast:    bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o
-		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -o $(MAIN) bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o -lpthread
+fast:    bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o bin/fJoinJob.o bin/fHistogramJob.o bin/fPartitionJob.o
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -o $(MAIN) bin/fmain.o bin/fJoiner.o bin/fDatabaseSystem.o bin/fQuery.o bin/fRelation.o bin/fJobScheduler.o bin/fJoinJob.o bin/fHistogramJob.o bin/fPartitionJob.o -lpthread
 		@echo Database System Compiled Successfully
 
 bin/fmain.o:	src/main.cpp
@@ -66,3 +75,12 @@ bin/fQuery.o:	src/Query.cpp
 
 bin/fRelation.o:	src/Relation.cpp
 		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/Relation.cpp -o bin/fRelation.o
+
+bin/fJoinJob.o:	src/JoinJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/JoinJob.cpp -o bin/fJoinJob.o
+
+bin/fHistogramJob.o:	src/HistogramJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/HistogramJob.cpp -o bin/fHistogramJob.o
+
+bin/fPartitionJob.o:	src/PartitionJob.cpp
+		$(CC) $(CFLAGS) $(INCLUDES) -Ofast -frename-registers -march=native -c src/PartitionJob.cpp -o bin/fPartitionJob.o

@@ -10,6 +10,17 @@
 #define STOP_COMMAND 2
 #define WAIT_COMMAND 1
 
+#include <time.h>
+#include <sys/time.h>
+double get_wall_time1(){
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        //  Handle error
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
 DatabaseSystem::DatabaseSystem():
 num_of_relations(0), relations(NULL), query(NULL),
 result_buffer(new vector<uint64_t>()), joiner(new Joiner(&result_buffer))
@@ -55,13 +66,16 @@ int DatabaseSystem::load_relations(){
 }
 
 int DatabaseSystem::handle_load(){
+    int count = 1;
     int code;
     result_buffer->reserve(8192);
     while( (code = construct_query()) != STOP_COMMAND){
         if(code != WAIT_COMMAND){
             result_buffer->clear();
             result_buffer->reserve(8192);
+            double t0 = get_wall_time1();
             execute_query();
+            cerr << "Query Num: "<< count++ << "took: " << get_wall_time1() - t0 << endl;
         }
         // else{
         //     cout << "Load Handled" << endl;
