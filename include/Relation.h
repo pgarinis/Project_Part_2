@@ -12,6 +12,12 @@ class Relation{
     uint64_t* columns;
 
 public:
+    //statistics //will be arrays of uint64_t
+    uint64_t* l;
+    uint64_t* u;
+    uint64_t* f;
+    uint64_t* d;
+
     Relation(char* file_name);
     ~Relation();
 
